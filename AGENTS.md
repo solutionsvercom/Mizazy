@@ -6,60 +6,57 @@ MongoDB + Express + React + Node.js project with separate frontend and backend.
 
 ```
 ├── backend/          # Express API + MongoDB (Mongoose)
-│   ├── index.js      # Server entry
-│   ├── db.js         # MongoDB connection
-│   ├── seed.js       # Seed data
-│   ├── models/       # Mongoose models
-│   ├── routes/       # API routes
-│   └── middleware/   # Auth middleware
+│   ├── index.js      # Server entry (also serves frontend in production)
+│   ├── public/       # Built React app (from `npm run build`)
+│   ├── db.js
+│   ├── seed.js
+│   ├── models/
+│   ├── routes/
+│   └── middleware/
 ├── frontend/         # React + Vite + Tailwind CSS
-│   ├── index.html
-│   ├── vite.config.ts
-│   └── src/
-│       ├── main.tsx
-│       ├── App.tsx
-│       ├── api.ts
-│       ├── store.tsx
-│       ├── components/
-│       └── pages/
-└── package.json      # Root scripts to run both apps
+└── package.json      # Hostinger / root scripts
 ```
 
-## Setup
-
-1. Install dependencies from the repo root:
+## Local development
 
 ```bash
 npm run install:all
-```
-
-2. Copy env file and edit if needed:
-
-```bash
 copy backend\.env.example backend\.env
-```
-
-3. Start MongoDB locally (or set `MONGODB_URI` to Atlas). If no MongoDB is available, the API falls back to an in-memory MongoDB server.
-
-## Development
-
-Run API and Vite in two terminals:
-
-```bash
 npm run dev:backend
 npm run dev:frontend
 ```
 
-- Frontend: http://localhost:5173 (proxies `/api` → backend)
+- Frontend: http://localhost:5173
 - Backend: http://localhost:5000
+
+## Hostinger Node.js deploy
+
+Use the **Node.js** / Web App section in hPanel ([Hostinger Node.js docs](https://docs.hostinger.com/node.js/creating-an-app)).
+
+Recommended settings:
+
+| Setting | Value |
+| --- | --- |
+| Framework | Express / Other |
+| Node.js version | **20** |
+| Root directory | `/` (repo root) |
+| Build command | `npm run build` |
+| Entry file | `backend/index.js` |
+| Start command | `npm start` (or leave default if it uses package.json `start`) |
+
+Environment variables in Hostinger (do **not** upload `.env`):
+
+- `MONGODB_URI` — your Atlas connection string
+- `JWT_SECRET` — a long random secret
+- `NODE_ENV` — `production`
+- `PORT` — set automatically by Hostinger (do not hardcode)
+
+What the build does: installs frontend deps, builds React into `backend/public`, then Express serves API + static site together.
 
 ## Stack
 
-- **MongoDB** — database (Mongoose ODM)
-- **Express** — REST API in `backend/`
-- **React 19** — UI in `frontend/`
-- **Node.js** — runtime
-- **Vite + Tailwind CSS v4** — frontend tooling
+- MongoDB, Express, React 19, Node.js 20
+- Vite + Tailwind CSS v4
 
 ## Code quality
 

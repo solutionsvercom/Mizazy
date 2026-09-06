@@ -4,6 +4,9 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 let memoryServer;
 
 async function startMemoryServer() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("MongoDB connection failed in production. Check MONGODB_URI.");
+  }
   memoryServer = await MongoMemoryServer.create();
   const memUri = memoryServer.getUri();
   await mongoose.connect(memUri);
@@ -21,7 +24,7 @@ export async function connectDb() {
       console.log("MongoDB connected:", uri.replace(/\/\/.*@/, "//***@"));
       return { mode: "atlas", uri };
     } catch (err) {
-      if (!isLocalUri) throw err;
+      if (!isLocalUri || process.env.NODE_ENV === "production") throw err;
       console.warn("Could not connect to MONGODB_URI, falling back to in-memory MongoDB");
       console.warn(err.message);
       return startMemoryServer();

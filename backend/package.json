@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node --watch index.js",
     "start": "node index.js",
@@ -14,7 +17,6 @@
     "dotenv": "^16.6.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "mizazy-ecommerce": "file:..",
     "mongodb-memory-server": "^10.4.3",
     "mongoose": "^8.24.4"
   }

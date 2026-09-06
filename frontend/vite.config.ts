@@ -8,6 +8,10 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    outDir: path.resolve(rootDir, "../backend/public"),
+    emptyOutDir: true,
+  },
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),

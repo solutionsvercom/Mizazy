@@ -10,6 +10,7 @@ import productRoutes from "./routes/products.js";
 import authRoutes from "./routes/auth.js";
 import orderRoutes from "./routes/orders.js";
 import catalogRoutes from "./routes/catalog.js";
+import { getAllowedOrigins, getAppUrl } from "./config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -17,12 +18,31 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 const app = express();
 const PORT = Number(process.env.PORT || process.env.API_PORT || 5000);
 const publicDir = path.join(__dirname, "public");
+const allowedOrigins = getAllowedOrigins();
 
-app.use(cors());
+app.set("trust proxy", 1);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Same-origin / server-to-server / Hostinger health checks often omit Origin
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, brand: "MIZAZY", time: new Date().toISOString() });
+  res.json({
+    ok: true,
+    brand: "MIZAZY",
+    appUrl: getAppUrl(),
+    time: new Date().toISOString(),
+  });
 });
 
 app.use("/api/products", productRoutes);

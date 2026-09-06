@@ -49,7 +49,14 @@ Environment variables in Hostinger (do **not** upload `.env`):
 - `MONGODB_URI` — your Atlas connection string
 - `JWT_SECRET` — a long random secret
 - `NODE_ENV` — `production`
+- `APP_URL` — `https://mizazy.com`
+- `ALLOWED_ORIGINS` — `https://mizazy.com,https://www.mizazy.com,http://localhost:5173,http://localhost:5000`
 - `PORT` — set automatically by Hostinger (do not hardcode)
+
+Site URLs used by the app:
+
+- Production: `https://mizazy.com` and `https://www.mizazy.com`
+- Local: `http://localhost:5173` (frontend) and `http://localhost:5000` (API)
 
 What the build does: installs frontend deps, builds React into `backend/public`, then Express serves API + static site together.
 

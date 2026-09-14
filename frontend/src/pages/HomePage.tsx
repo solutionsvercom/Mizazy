@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import React from "react";
-import MizazyLogo from "../imports/mizazy_logo__1_-01.png";
+import { MIZAZY_LOGO_URL } from "../brand";
 import { whyMizazy, Product, CartItem } from "../data";
 import { useStore } from "../store";
 import { api } from "../api";
@@ -973,7 +973,7 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
           <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             <div className="flex items-center gap-2 mb-5">
               <img
-                src={MizazyLogo}
+                src={MIZAZY_LOGO_URL}
                 alt="MIZAZY"
                 style={{
                   height: 72,

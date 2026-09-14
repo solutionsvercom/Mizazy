@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CartItem } from "../data";
-import MizazyLogo from "../imports/mizazy_logo__1_-01.png";
+import { MIZAZY_LOGO_URL } from "../brand";
 import { api, PlacedOrder } from "../api";
 import { useStore } from "../store";
 
@@ -99,7 +99,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
         <div className="flex items-center justify-between mb-10">
           <button onClick={() => onNavigate("home")} className="flex items-center gap-2">
             <img
-              src={MizazyLogo}
+              src={MIZAZY_LOGO_URL}
               alt="MIZAZY"
               style={{
                 height: 48,

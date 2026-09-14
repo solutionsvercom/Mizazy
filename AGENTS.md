@@ -51,6 +51,10 @@ Environment variables in Hostinger (do **not** upload `.env`):
 - `NODE_ENV` — `production`
 - `APP_URL` — `https://mizazy.com`
 - `ALLOWED_ORIGINS` — `https://mizazy.com,https://www.mizazy.com,http://localhost:5173,http://localhost:5000`
+- `CLOUDINARY_CLOUD_NAME` — from Cloudinary dashboard
+- `CLOUDINARY_API_KEY` — from Cloudinary dashboard
+- `CLOUDINARY_API_SECRET` — from Cloudinary dashboard
+- `CLOUDINARY_FOLDER` — optional, default `mizazy`
 - `PORT` — set automatically by Hostinger (do not hardcode)
 
 Site URLs used by the app:

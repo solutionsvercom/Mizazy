@@ -4,13 +4,16 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import express from "express";
 import cors from "cors";
+import multer from "multer";
 import { connectDb } from "./db.js";
 import { seedIfEmpty } from "./seed.js";
 import productRoutes from "./routes/products.js";
 import authRoutes from "./routes/auth.js";
 import orderRoutes from "./routes/orders.js";
 import catalogRoutes from "./routes/catalog.js";
+import uploadRoutes from "./routes/upload.js";
 import { getAllowedOrigins, getAppUrl } from "./config.js";
+import { configureCloudinary } from "./cloudinary.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -48,6 +51,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/products", productRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/upload", uploadRoutes);
 app.use("/api", catalogRoutes);
 
 app.use("/api", (_req, res) => {
@@ -66,12 +70,29 @@ if (fs.existsSync(publicDir)) {
 
 app.use((err, _req, res, _next) => {
   console.error(err);
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "Image too large (max 5MB)"
+        : err.code === "LIMIT_FILE_COUNT"
+          ? "Too many images (max 8)"
+          : err.message;
+    return res.status(400).json({ message });
+  }
+  if (err.message?.includes("Only JPEG")) {
+    return res.status(400).json({ message: err.message });
+  }
   res.status(500).json({ message: err.message || "Server error" });
 });
 
 async function start() {
   await connectDb();
   await seedIfEmpty();
+  if (configureCloudinary()) {
+    console.log("Cloudinary configured");
+  } else {
+    console.warn("Cloudinary not configured — set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET");
+  }
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`MIZAZY running on port ${PORT}`);
   });

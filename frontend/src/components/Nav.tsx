@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CartItem } from "../data";
-import MizazyLogo from "../imports/mizazy_logo__1_-01.png";
+import { MIZAZY_LOGO_URL } from "../brand";
 
 interface NavProps {
   onNavigate: (page: string) => void;
@@ -66,7 +66,7 @@ export default function Nav({ onNavigate, cartItems, onCartOpen, onSearchOpen, o
             className="flex items-center gap-2.5 group flex-shrink-0"
           >
             <img
-              src={MizazyLogo}
+              src={MIZAZY_LOGO_URL}
               alt="MIZAZY"
               className="transition-all duration-200 group-hover:scale-105"
               style={{

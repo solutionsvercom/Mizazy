@@ -188,7 +188,7 @@ export default function CartSidebar({
                   ][i];
                   return (
                     <div key={i} className="flex-shrink-0 w-32 rounded-lg bg-white/03 border border-white/05 p-2">
-                      <img src={rec.image} alt={rec.name} className="w-full h-16 object-cover rounded mb-1.5" />
+                      <img src={rec.image} alt={rec.name} loading="lazy" className="w-full h-16 object-cover rounded mb-1.5" />
                       <p className="text-white text-[10px] font-display font-600 leading-tight mb-1">{rec.name}</p>
                       <p className="text-[#D4A520] text-[10px] font-600">₹{rec.price.toLocaleString()}</p>
                     </div>

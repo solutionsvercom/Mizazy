@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Product, CartItem } from "./data";
 import { useStore } from "./store";
 import { PlacedOrder } from "./api";
@@ -22,6 +22,13 @@ interface Toast {
   type?: "success" | "info";
 }
 
+const SIMPLE_PAGES: Record<string, Page> = {
+  "/checkout": "checkout",
+  "/track": "track",
+  "/account": "account",
+  "/confirmation": "confirmation",
+};
+
 function productFromPath(products: Product[]): Product | null {
   const match = window.location.pathname.match(/^\/product\/([^/]+)\/?$/);
   if (!match) return null;
@@ -29,19 +36,47 @@ function productFromPath(products: Product[]): Product | null {
   return products.find((p) => p.slug === key || p.id === key) ?? null;
 }
 
+function routeFromLocation(products: Product[], hasOrder: boolean): { page: Page; product: Product | null } {
+  const product = productFromPath(products);
+  if (product) return { page: "product", product };
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const page = SIMPLE_PAGES[path];
+  if (!page || (page === "confirmation" && !hasOrder)) return { page: "home", product: null };
+  return { page, product: null };
+}
+
+function pathFor(page: Page, product: Product | null): string {
+  if (page === "product" && product) return `/product/${product.slug || product.id}`;
+  if (page === "home" || page === "product") return "/";
+  return `/${page}`;
+}
+
 export default function App() {
   const { cart, setCart, user, products } = useStore();
-  const [initialProduct] = useState(() => productFromPath(products));
-  const [page, setPage] = useState<Page>(initialProduct ? "product" : "home");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialProduct);
+  const [initialRoute] = useState(() => routeFromLocation(products, false));
+  const [page, setPage] = useState<Page>(initialRoute.page);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialRoute.product);
+  const replaceNextEntry = useRef(true);
+  const productsRef = useRef(products);
+  productsRef.current = products;
 
   useEffect(() => {
-    const path = page === "product" && selectedProduct
-      ? `/product/${selectedProduct.slug || selectedProduct.id}`
-      : "/";
-    if (window.location.pathname !== path) {
-      window.history.replaceState(null, "", path);
+    // Visitors landing on an inner page (e.g. from Google) get the home page behind it,
+    // so the browser Back button returns to the MIZAZY home page instead of leaving the site.
+    if (initialRoute.page !== "home" && !window.history.state?.mizazy) {
+      const current = window.location.pathname + window.location.search + window.location.hash;
+      window.history.replaceState({ mizazy: true }, "", "/");
+      window.history.pushState({ mizazy: true }, "", current);
     }
+  }, [initialRoute]);
+
+  useEffect(() => {
+    const path = pathFor(page, selectedProduct);
+    const replace = replaceNextEntry.current;
+    replaceNextEntry.current = false;
+    if (window.location.pathname === path) return;
+    if (replace) window.history.replaceState({ mizazy: true }, "", path);
+    else window.history.pushState({ mizazy: true }, "", path);
   }, [page, selectedProduct]);
   const [cartOpen, setCartOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -49,6 +84,24 @@ export default function App() {
   const [placedOrder, setPlacedOrder] = useState<PlacedOrder | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [trackPrefill, setTrackPrefill] = useState<string | undefined>(undefined);
+  const hasOrderRef = useRef(false);
+  hasOrderRef.current = placedOrder !== null;
+
+  useEffect(() => {
+    const onPopState = () => {
+      const next = routeFromLocation(productsRef.current, hasOrderRef.current);
+      if (pathFor(next.page, next.product) !== window.location.pathname) {
+        replaceNextEntry.current = true;
+      }
+      if (next.product) setSelectedProduct(next.product);
+      setPage(next.page);
+      setCartOpen(false);
+      setSearchOpen(false);
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const addToast = useCallback((message: string, sub?: string, type: "success" | "info" = "success") => {
     const id = Date.now();
@@ -120,6 +173,7 @@ export default function App() {
   const handleOrderPlaced = useCallback((order: PlacedOrder) => {
     setPlacedOrder(order);
     setCart([]);
+    replaceNextEntry.current = true;
     setPage("confirmation");
     window.scrollTo({ top: 0 });
   }, [setCart]);

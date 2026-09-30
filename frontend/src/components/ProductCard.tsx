@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Product, CartItem } from "../data";
 import { useStore } from "../store";
+import LazyVideo from "./LazyVideo";
 
 interface ProductCardProps {
   product: Product;
@@ -47,16 +48,11 @@ export default function ProductCard({ product, onViewProduct, onAddToCart }: Pro
       {/* Image area */}
       <div className="card-image-wrap bg-[#0d0d0d]" style={{ aspectRatio: "1 / 1" }}>
         {product.video ? (
-          <video
+          <LazyVideo
             src={product.video}
             poster={product.image}
             aria-label={product.name}
             className="card-img w-full h-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
           />
         ) : (
           <img

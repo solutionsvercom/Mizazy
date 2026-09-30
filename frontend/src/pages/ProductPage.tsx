@@ -271,7 +271,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                       border: `2px solid ${selectedImage === i ? "#D4A520" : "rgba(255,255,255,0.08)"}`,
                       opacity: selectedImage === i ? 1 : 0.6,
                     }}>
-                    <img src={img} alt={`View ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`View ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

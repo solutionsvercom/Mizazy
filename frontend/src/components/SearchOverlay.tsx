@@ -128,7 +128,7 @@ export default function SearchOverlay({ open, onClose, onViewProduct }: SearchOv
                     }}
                   >
                     <div className="w-14 h-14 rounded-lg overflow-hidden bg-[#111] flex-shrink-0">
-                      <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={p.image} alt={p.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-display font-600 text-white text-sm">{p.name}</p>

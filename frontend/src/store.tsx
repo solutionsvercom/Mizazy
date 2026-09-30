@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { Product, CartItem, Review, products as fallbackProducts, categories as fallbackCategories, reviews as fallbackReviews, bundles as fallbackBundles } from "./data";
 import { api, AuthUser, getToken, setToken } from "./api";
+import { optimizeImageField, optimizeProductMedia } from "./media";
 
 interface Bundle {
   title: string;
@@ -57,11 +58,15 @@ function loadLocalWishlist(): string[] {
   }
 }
 
+const optimizeProducts = (list: Product[]) => list.map(optimizeProductMedia);
+const optimizeCategories = (list: Category[]) => list.map((c) => optimizeImageField(c, 800));
+const optimizeBundles = (list: Bundle[]) => list.map((b) => optimizeImageField(b, 800));
+
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(fallbackProducts);
-  const [categories, setCategories] = useState<Category[]>(fallbackCategories);
+  const [products, setProducts] = useState<Product[]>(() => optimizeProducts(fallbackProducts));
+  const [categories, setCategories] = useState<Category[]>(() => optimizeCategories(fallbackCategories));
   const [reviews, setReviews] = useState<Review[]>(fallbackReviews);
-  const [bundles, setBundles] = useState<Bundle[]>(fallbackBundles);
+  const [bundles, setBundles] = useState<Bundle[]>(() => optimizeBundles(fallbackBundles));
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [wishlist, setWishlist] = useState<string[]>(loadLocalWishlist);
@@ -96,10 +101,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const data = await api.catalog();
         if (cancelled) return;
-        setProducts(data.products as Product[]);
-        setCategories(data.categories as Category[]);
+        setProducts(optimizeProducts(data.products as Product[]));
+        setCategories(optimizeCategories(data.categories as Category[]));
         setReviews(data.reviews as Review[]);
-        setBundles(data.bundles as Bundle[]);
+        setBundles(optimizeBundles(data.bundles as Bundle[]));
       } catch {
         /* keep local catalog fallback if API is offline */
       } finally {

@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import multer from "multer";
 import { connectDb } from "./db.js";
 import { seedIfEmpty } from "./seed.js";
@@ -24,6 +25,7 @@ const publicDir = path.join(__dirname, "public");
 const allowedOrigins = getAllowedOrigins();
 
 app.set("trust proxy", 1);
+app.use(compression());
 
 app.use(
   cors({
@@ -59,9 +61,21 @@ app.use("/api", (_req, res) => {
 });
 
 if (fs.existsSync(publicDir)) {
-  app.use(express.static(publicDir));
+  app.use(
+    express.static(publicDir, {
+      setHeaders(res, filePath) {
+        // Vite emits content-hashed file names under /assets, so they never change once built.
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache");
+        }
+      },
+    })
+  );
   app.use((req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
+    res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.join(publicDir, "index.html"), (err) => {
       if (err) next(err);
     });

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import React from "react";
 import { MIZAZY_LOGO_URL, MIZAZY_HERO_BUDS_URL, MIZAZY_GREEN_BUDS_URL } from "../brand";
+import { optimizeImage } from "../media";
+import LazyVideo from "../components/LazyVideo";
 import { whyMizazy, Product, CartItem } from "../data";
 import { useStore } from "../store";
 import { api } from "../api";
@@ -197,7 +199,7 @@ function Hero({ onShop }: { onShop: () => void }) {
               <div className="absolute -inset-3 rounded-2xl blur-xl opacity-70"
                 style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)" }} />
               <img
-                src="https://res.cloudinary.com/aiwtovua/image/upload/v1790765806/Mizazy_Equalizer_Bluetooth_Neckband_Orange.png"
+                src={optimizeImage("https://res.cloudinary.com/aiwtovua/image/upload/v1790765806/Mizazy_Equalizer_Bluetooth_Neckband_Orange.png", 400)}
                 alt="Mizazy Equalizer Bluetooth Neckband Orange"
                 className="w-full rounded-xl"
                 style={{ boxShadow: "0 18px 52px rgba(0,0,0,0.75), 0 0 40px rgba(212,165,32,0.15)", filter: "brightness(1.08) contrast(1.06)" }}
@@ -220,7 +222,7 @@ function Hero({ onShop }: { onShop: () => void }) {
           <div className="absolute left-8 top-8 z-0 animate-float-d3"
             style={{ width: "clamp(70px,9vw,100px)" }}>
             <img
-              src="https://res.cloudinary.com/aiwtovua/image/upload/v1790766592/Mizazy_135W_Super_Fast_Charger_Front.png"
+              src={optimizeImage("https://res.cloudinary.com/aiwtovua/image/upload/v1790766592/Mizazy_135W_Super_Fast_Charger_Front.png", 300)}
               alt="Mizazy 135W Super Fast Charger"
               className="w-full rounded-xl"
               style={{ filter: "brightness(1.05) contrast(1.08)", opacity: 0.75, boxShadow: "0 8px 24px rgba(0,0,0,0.6)" }}
@@ -268,15 +270,10 @@ function Hero({ onShop }: { onShop: () => void }) {
 function CategoryMedia({ src, alt }: { src: string; alt: string }) {
   if (/\.(mp4|webm|mov)(\?|$)/i.test(src)) {
     return (
-      <video
+      <LazyVideo
         src={src}
         aria-label={alt}
         className="w-full h-full object-cover"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="metadata"
       />
     );
   }
@@ -466,16 +463,11 @@ function NewArrivals({ onViewProduct }: Pick<HomePageProps, "onViewProduct" | "o
               onClick={() => onViewProduct(newProducts[0])}
             >
               {newProducts[0].video ? (
-                <video
+                <LazyVideo
                   src={newProducts[0].video}
                   poster={newProducts[0].image}
                   aria-label={newProducts[0].imageAlt || newProducts[0].name}
                   className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-600"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
                 />
               ) : (
                 <img
@@ -527,17 +519,12 @@ function NewArrivals({ onViewProduct }: Pick<HomePageProps, "onViewProduct" | "o
               >
                 <div className="w-36 flex-shrink-0 relative overflow-hidden bg-[#0d0d0d]">
                   {p.video ? (
-                    <video
+                    <LazyVideo
                       src={p.video}
                       poster={p.image}
                       aria-label={p.imageAlt || p.name}
                       className="w-full h-full object-cover group-hover:scale-107 transition-transform duration-500"
                       style={{ transformOrigin: "center" }}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
                     />
                   ) : (
                     <img
@@ -595,16 +582,11 @@ function FeaturedProduct({ onViewProduct, onAddToCart }: Pick<HomePageProps, "on
               {/* Image side */}
               <div className="relative h-72 lg:h-[520px] overflow-hidden bg-[#0d0d0d]">
                 {featured.video ? (
-                  <video
+                  <LazyVideo
                     src={featured.video}
                     poster={featured.image}
                     aria-label={featured.imageAlt || featured.name}
                     className="w-full h-full object-cover"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
                   />
                 ) : (
                   <img
@@ -732,7 +714,7 @@ function OffersSection({ onNavigate }: { onNavigate: (p: string) => void }) {
               onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.065)"; (e.currentTarget as HTMLDivElement).style.transform = ""; (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}
             >
               <div className="h-44 overflow-hidden relative">
-                <img src={b.image} alt={b.title}
+                <img src={b.image} alt={b.title} loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0c0c0c]" />
               </div>

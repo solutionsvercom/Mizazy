@@ -39,7 +39,7 @@ function Accordion({ title, children, defaultOpen = false }: { title: string; ch
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
       </button>
-      <div className={`accordion-content ${open ? "max-h-[500px] opacity-100 pb-5" : "max-h-0 opacity-0"}`}>
+      <div className={`accordion-content ${open ? "max-h-[3000px] opacity-100 pb-5" : "max-h-0 opacity-0"}`}>
         {children}
       </div>
     </div>
@@ -50,6 +50,13 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
   const { products, wishlist, toggleWishlist } = useStore();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
+  const colorGallery = product.colorImages?.[selectedColor];
+  const galleryImages = colorGallery && colorGallery.length > 0 ? colorGallery : product.images;
+
+  useEffect(() => {
+    setSelectedColor(0);
+    setSelectedImage(0);
+  }, [product.id]);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
@@ -58,7 +65,10 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
   const ctaRef = useRef<HTMLDivElement>(null);
 
   const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100);
-  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const categoryGroup = product.category.split(" / ")[0];
+  const related = products
+    .filter((p) => p.id !== product.id && p.category.split(" / ")[0] === categoryGroup)
+    .slice(0, 4);
 
   // Sticky bar: show when CTA buttons scroll out of view
   useEffect(() => {
@@ -69,6 +79,57 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
     if (ctaRef.current) observer.observe(ctaRef.current);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const origin = window.location.hostname.endsWith("mizazy.com") ? "https://mizazy.com" : window.location.origin;
+    const url = `${origin}/product/${product.slug || product.id}`;
+    const image = /^https?:\/\//.test(product.image) ? product.image : `${origin}${product.image}`;
+    const description = product.metaDescription || product.description;
+    const restores: (() => void)[] = [];
+
+    const setHead = (selector: string, create: () => HTMLElement, attr: string, value: string) => {
+      const existing = document.head.querySelector<HTMLElement>(selector);
+      if (existing) {
+        const prev = existing.getAttribute(attr);
+        restores.push(() => (prev === null ? existing.removeAttribute(attr) : existing.setAttribute(attr, prev)));
+        existing.setAttribute(attr, value);
+      } else {
+        const el = create();
+        el.setAttribute(attr, value);
+        document.head.appendChild(el);
+        restores.push(() => el.remove());
+      }
+    };
+    const setMeta = (key: "name" | "property", name: string, content?: string) => {
+      if (!content) return;
+      setHead(`meta[${key}="${name}"]`, () => {
+        const m = document.createElement("meta");
+        m.setAttribute(key, name);
+        return m;
+      }, "content", content);
+    };
+
+    const prevTitle = document.title;
+    document.title = product.metaTitle || `${product.name} | MIZAZY`;
+    setMeta("name", "description", description);
+    setMeta("name", "keywords", product.seoKeywords?.join(", "));
+    setMeta("property", "og:type", "product");
+    setMeta("property", "og:title", product.ogTitle || document.title);
+    setMeta("property", "og:description", product.ogDescription || description);
+    setMeta("property", "og:image", image);
+    setMeta("property", "og:image:alt", product.imageAlt || product.name);
+    setMeta("property", "og:url", url);
+    setHead('link[rel="canonical"]', () => {
+      const link = document.createElement("link");
+      link.setAttribute("rel", "canonical");
+      return link;
+    }, "href", url);
+
+    return () => {
+      document.title = prevTitle;
+      restores.reverse().forEach((restore) => restore());
+    };
+  }, [product]);
 
   const handleAddToCart = () => {
     onAddToCart({ product, quantity, color: product.colors[selectedColor], colorName: product.colorNames[selectedColor] });
@@ -91,6 +152,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
   };
 
   const faqs = [
+    ...(product.faqs ?? []),
     { q: "Does this come with warranty?", a: "Yes, all MIZAZY products come with manufacturer's warranty. See the Warranty section for full details." },
     { q: "What is the return policy?", a: "7-day return from delivery date. Product must be in original, unused condition with all accessories." },
     { q: "How long does delivery take?", a: "Standard: 3-5 business days. Express: 1-2 days. Available in 200+ cities across India." },
@@ -157,8 +219,9 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
             {/* Main image */}
             <div className="relative rounded-2xl overflow-hidden bg-[#0d0d0d] border border-white/065 aspect-square mb-3 group cursor-zoom-in">
               <img
-                src={product.images[selectedImage]}
-                alt={`${product.name} view ${selectedImage + 1}`}
+                src={galleryImages[selectedImage] ?? galleryImages[0]}
+                alt={`${product.imageAlt || product.name} ${product.colorNames[selectedColor] ?? ""} view ${selectedImage + 1}`}
+                title={product.imageTitle}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
 
@@ -191,17 +254,17 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
               </div>
 
               {/* Image counter */}
-              {product.images.length > 1 && (
+              {galleryImages.length > 1 && (
                 <div className="absolute bottom-4 right-4 glass px-2.5 py-1 rounded-lg">
-                  <span className="font-display font-600 text-white/70 text-xs">{selectedImage + 1} / {product.images.length}</span>
+                  <span className="font-display font-600 text-white/70 text-xs">{selectedImage + 1} / {galleryImages.length}</span>
                 </div>
               )}
             </div>
 
             {/* Thumbnails */}
-            {product.images.length > 1 && (
+            {galleryImages.length > 1 && (
               <div className="flex gap-2.5 mb-3">
-                {product.images.map((img, i) => (
+                {galleryImages.map((img, i) => (
                   <button key={i} onClick={() => setSelectedImage(i)}
                     className="w-[72px] h-[72px] rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200"
                     style={{
@@ -238,7 +301,18 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
             <h1 className="font-display font-800 text-3xl sm:text-4xl text-white leading-tight tracking-tight mb-2">
               {product.name}
             </h1>
-            <p className="text-white/45 text-base mb-5">{product.tagline}</p>
+            <p className="text-white/45 text-base mb-5">{product.title || product.tagline}</p>
+
+            {product.tags && product.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-5">
+                {product.tags.map((tag) => (
+                  <span key={tag} className="px-2.5 py-1 rounded-lg text-xs font-display font-600 text-[#D4A520]"
+                    style={{ background: "rgba(212,165,32,0.1)", border: "1px solid rgba(212,165,32,0.25)" }}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Rating row */}
             <div className="flex flex-wrap items-center gap-3 mb-6 pb-6 border-b border-white/055">
@@ -267,6 +341,11 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
             </div>
 
             <div className="flex items-center gap-3 mb-7">
+              {product.mrp > product.price && (
+                <p className="text-[#D4A520] text-sm font-display font-600">
+                  You save ₹{(product.mrp - product.price).toLocaleString()}
+                </p>
+              )}
               {product.emi && (
                 <p className="text-[#D4A520]/70 text-sm">{product.emi}</p>
               )}
@@ -284,7 +363,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
               </div>
               <div className="flex gap-3">
                 {product.colors.map((c, i) => (
-                  <button key={i} onClick={() => setSelectedColor(i)}
+                  <button key={i} onClick={() => { setSelectedColor(i); setSelectedImage(0); }}
                     className={`color-swatch ${selectedColor === i ? "selected" : ""}`}
                     style={{ backgroundColor: c, width: 32, height: 32 }}
                     title={product.colorNames[i]}
@@ -401,6 +480,25 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                     </li>
                   ))}
                 </ul>
+                {product.keyFeatures && product.keyFeatures.length > 0 && (
+                  <ol className="mt-5 space-y-4">
+                    {product.keyFeatures.map((kf, i) => (
+                      <li key={i} className="text-sm leading-relaxed">
+                        <p className="text-white font-display font-700 mb-1">
+                          {i + 1}. {kf.title}
+                        </p>
+                        <p className="text-white/55">{kf.text}</p>
+                        {kf.points && (
+                          <ul className="mt-1.5 pl-4 list-disc text-white/55 space-y-0.5">
+                            {kf.points.map((pt) => (
+                              <li key={pt}>{pt}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </Accordion>
 
               <Accordion title="Specifications">
@@ -413,6 +511,26 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                   ))}
                 </div>
               </Accordion>
+
+              {product.infoSections?.map((section) => (
+                <Accordion key={section.title} title={section.title}>
+                  <div className="space-y-1.5">
+                    {section.items.map((item) => (
+                      <div key={item.label} className="flex justify-between items-start py-1.5 border-b border-white/04 last:border-0 gap-4">
+                        <span className="text-white/38 text-xs font-display font-500 flex-shrink-0">{item.label}</span>
+                        <span className="text-white/72 text-xs text-right">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {section.notes && section.notes.length > 0 && (
+                    <ul className="mt-3 space-y-1.5 text-white/45 text-xs leading-relaxed list-disc pl-4">
+                      {section.notes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  )}
+                </Accordion>
+              ))}
 
               <Accordion title="What's in the Box">
                 <ul className="space-y-2">
@@ -429,7 +547,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
 
               <Accordion title="Warranty & Returns">
                 <div className="text-white/50 text-sm space-y-2.5 leading-relaxed">
-                  <p>Manufacturer warranty covers manufacturing defects for the period specified in specifications.</p>
+                  <p>{product.warranty || "Manufacturer warranty covers manufacturing defects for the period specified in specifications."}</p>
                   <p>7-day return policy from date of delivery for unused products in original packaging with all accessories.</p>
                   <p>For warranty claims or returns, contact MIZAZY support with your Order ID and proof of purchase.</p>
                 </div>

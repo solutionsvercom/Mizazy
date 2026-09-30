@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CartItem } from "../data";
-import { MIZAZY_LOGO_URL } from "../brand";
+import { MIZAZY_NAV_LOGO_URL } from "../brand";
 
 interface NavProps {
   onNavigate: (page: string) => void;
@@ -58,7 +58,7 @@ export default function Nav({ onNavigate, cartItems, onCartOpen, onSearchOpen, o
       </div>
 
       <nav className={`sticky top-0 z-40 transition-all duration-400 ${scrolled ? "glass-dark" : "bg-transparent"}`}>
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 flex items-center justify-between h-[60px] gap-4">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 flex items-center justify-between h-[80px] gap-4">
 
           {/* Logo */}
           <button
@@ -66,13 +66,14 @@ export default function Nav({ onNavigate, cartItems, onCartOpen, onSearchOpen, o
             className="flex items-center gap-2.5 group flex-shrink-0"
           >
             <img
-              src={MIZAZY_LOGO_URL}
+              src={MIZAZY_NAV_LOGO_URL}
               alt="MIZAZY"
               className="transition-all duration-200 group-hover:scale-105"
               style={{
-                height: 56,
+                height: 72,
+                width: "auto",
+                maxWidth: 220,
                 objectFit: "contain",
-                filter: "invert(1) hue-rotate(180deg) drop-shadow(0 0 10px rgba(212,165,32,0.5))",
               }}
             />
           </button>

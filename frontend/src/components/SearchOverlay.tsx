@@ -45,7 +45,8 @@ export default function SearchOverlay({ open, onClose, onViewProduct }: SearchOv
         p.category.toLowerCase().includes(q) ||
         p.tagline.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
-        p.features.some((f) => f.toLowerCase().includes(q))
+        p.features.some((f) => f.toLowerCase().includes(q)) ||
+        (p.seoKeywords ?? []).some((k) => k.toLowerCase().includes(q))
     );
     setResults(filtered);
   }, [query, products]);

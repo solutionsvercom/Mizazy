@@ -183,8 +183,8 @@ export default function CartSidebar({
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                 {[0, 1].map((i) => {
                   const rec = [
-                    { name: "MIZAZY GaN 65W", price: 1299, image: "https://images.unsplash.com/photo-1601524909162-ae8725290836?w=200&h=200&fit=crop&auto=format" },
-                    { name: "MIZAZY NeckPro", price: 999, image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=200&h=200&fit=crop&auto=format" },
+                    { name: "Mizazy 135W Super Fast Charger", price: 899, image: "https://images.unsplash.com/photo-1601524909162-ae8725290836?w=200&h=200&fit=crop&auto=format" },
+                    { name: "Mizazy 20W USB-C Power Adapter", price: 899, image: "https://images.unsplash.com/photo-1601524909162-ae8725290836?w=200&h=200&fit=crop&auto=format" },
                   ][i];
                   return (
                     <div key={i} className="flex-shrink-0 w-32 rounded-lg bg-white/03 border border-white/05 p-2">

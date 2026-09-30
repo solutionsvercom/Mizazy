@@ -22,10 +22,27 @@ interface Toast {
   type?: "success" | "info";
 }
 
+function productFromPath(products: Product[]): Product | null {
+  const match = window.location.pathname.match(/^\/product\/([^/]+)\/?$/);
+  if (!match) return null;
+  const key = decodeURIComponent(match[1]);
+  return products.find((p) => p.slug === key || p.id === key) ?? null;
+}
+
 export default function App() {
-  const { cart, setCart, user } = useStore();
-  const [page, setPage] = useState<Page>("home");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { cart, setCart, user, products } = useStore();
+  const [initialProduct] = useState(() => productFromPath(products));
+  const [page, setPage] = useState<Page>(initialProduct ? "product" : "home");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialProduct);
+
+  useEffect(() => {
+    const path = page === "product" && selectedProduct
+      ? `/product/${selectedProduct.slug || selectedProduct.id}`
+      : "/";
+    if (window.location.pathname !== path) {
+      window.history.replaceState(null, "", path);
+    }
+  }, [page, selectedProduct]);
   const [cartOpen, setCartOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);

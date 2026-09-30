@@ -46,12 +46,26 @@ export default function ProductCard({ product, onViewProduct, onAddToCart }: Pro
     >
       {/* Image area */}
       <div className="card-image-wrap bg-[#0d0d0d]" style={{ aspectRatio: "1 / 1" }}>
-        <img
-          src={product.image}
-          alt={product.name}
-          className="card-img w-full h-full object-cover"
-          loading="lazy"
-        />
+        {product.video ? (
+          <video
+            src={product.video}
+            poster={product.image}
+            aria-label={product.name}
+            className="card-img w-full h-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <img
+            src={product.image}
+            alt={product.imageAlt || product.name}
+            className="card-img w-full h-full object-cover"
+            loading="lazy"
+          />
+        )}
 
         {/* Gradient overlay — always there, deepens on hover */}
         <div
@@ -168,6 +182,11 @@ export default function ProductCard({ product, onViewProduct, onAddToCart }: Pro
             <span className="text-[#D4A520] text-[9px] font-display font-600">EMI avail.</span>
           )}
         </div>
+        {product.mrp > product.price && (
+          <p className="text-[#D4A520] text-[10px] font-display font-600 mt-1">
+            You save ₹{(product.mrp - product.price).toLocaleString()} · {discount}% off
+          </p>
+        )}
       </div>
     </div>
   );

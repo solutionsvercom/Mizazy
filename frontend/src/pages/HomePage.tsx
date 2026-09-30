@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import React from "react";
-import { MIZAZY_LOGO_URL } from "../brand";
+import { MIZAZY_LOGO_URL, MIZAZY_HERO_BUDS_URL, MIZAZY_GREEN_BUDS_URL } from "../brand";
 import { whyMizazy, Product, CartItem } from "../data";
 import { useStore } from "../store";
 import { api } from "../api";
@@ -177,14 +177,14 @@ function Hero({ onShop }: { onShop: () => void }) {
               <div className="absolute -inset-6 rounded-3xl blur-3xl"
                 style={{ background: "radial-gradient(circle, rgba(212,165,32,0.18) 0%, transparent 70%)" }} />
               <img
-                src="https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=700&h=700&fit=crop&auto=format&q=90"
-                alt="MIZAZY Buds Pro"
+                src={MIZAZY_HERO_BUDS_URL}
+                alt="Mizazy Wireless Buds 104"
                 className="w-full rounded-2xl"
                 style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.85), 0 0 80px rgba(212,165,32,0.18)", filter: "brightness(1.08) contrast(1.05)" }}
               />
               {/* Price tag */}
               <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 glass px-3.5 py-2 rounded-xl whitespace-nowrap">
-                <p className="font-display font-700 text-white text-xs">Buds Pro · ₹2,499</p>
+                <p className="font-display font-700 text-white text-xs">Wireless Buds 104 · ₹1,499</p>
                 <p className="text-[#D4A520] text-[9px] font-600 text-center mt-0.5">★ 4.8 · Best Seller</p>
               </div>
             </div>
@@ -197,8 +197,8 @@ function Hero({ onShop }: { onShop: () => void }) {
               <div className="absolute -inset-3 rounded-2xl blur-xl opacity-70"
                 style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)" }} />
               <img
-                src="https://images.unsplash.com/photo-1772949399808-7020b02896b9?w=500&h=500&fit=crop&auto=format&q=90"
-                alt="MIZAZY Watch X1"
+                src="https://res.cloudinary.com/aiwtovua/image/upload/v1790765806/Mizazy_Equalizer_Bluetooth_Neckband_Orange.png"
+                alt="Mizazy Equalizer Bluetooth Neckband Orange"
                 className="w-full rounded-xl"
                 style={{ boxShadow: "0 18px 52px rgba(0,0,0,0.75), 0 0 40px rgba(212,165,32,0.15)", filter: "brightness(1.08) contrast(1.06)" }}
               />
@@ -209,8 +209,8 @@ function Hero({ onShop }: { onShop: () => void }) {
           <div className="absolute left-0 sm:left-4 bottom-20 z-0 animate-float-d2"
             style={{ width: "clamp(90px,12vw,130px)" }}>
             <img
-              src="https://images.unsplash.com/photo-1599669454699-248893623440?w=400&h=400&fit=crop&auto=format&q=90"
-              alt="MIZAZY SoundMax Pro"
+              src={MIZAZY_GREEN_BUDS_URL}
+              alt="Mizazy Wireless Buds 104"
               className="w-full rounded-xl"
               style={{ boxShadow: "0 14px 40px rgba(0,0,0,0.7), 0 0 30px rgba(212,165,32,0.12)", filter: "brightness(1.1) contrast(1.05)", opacity: 0.92 }}
             />
@@ -220,8 +220,8 @@ function Hero({ onShop }: { onShop: () => void }) {
           <div className="absolute left-8 top-8 z-0 animate-float-d3"
             style={{ width: "clamp(70px,9vw,100px)" }}>
             <img
-              src="https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=300&h=300&fit=crop&auto=format&q=90"
-              alt="MIZAZY SoundMax"
+              src="https://res.cloudinary.com/aiwtovua/image/upload/v1790766592/Mizazy_135W_Super_Fast_Charger_Front.png"
+              alt="Mizazy 135W Super Fast Charger"
               className="w-full rounded-xl"
               style={{ filter: "brightness(1.05) contrast(1.08)", opacity: 0.75, boxShadow: "0 8px 24px rgba(0,0,0,0.6)" }}
             />
@@ -263,8 +263,26 @@ function Hero({ onShop }: { onShop: () => void }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CATEGORY SECTION — Asymmetric grid
+   CATEGORY SECTION
 ═══════════════════════════════════════════════════════════ */
+function CategoryMedia({ src, alt }: { src: string; alt: string }) {
+  if (/\.(mp4|webm|mov)(\?|$)/i.test(src)) {
+    return (
+      <video
+        src={src}
+        aria-label={alt}
+        className="w-full h-full object-cover"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+      />
+    );
+  }
+  return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
+}
+
 function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
   const { categories } = useStore();
   const ref = useRef<HTMLDivElement>(null);
@@ -276,29 +294,21 @@ function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
         <div className={`text-center mb-14 reveal ${visible ? "visible" : ""}`}>
           <p className="section-label mb-3">Find Your Tech</p>
           <h2 className="section-heading text-4xl sm:text-5xl text-white">Shop by Category</h2>
-          <p className="text-white/35 text-base mt-3">8 collections. One obsession.</p>
+          <p className="text-white/35 text-base mt-3">4 collections. One obsession.</p>
         </div>
 
-        {/* Asymmetric grid layout */}
         <div className={`reveal ${visible ? "visible reveal-delay-2" : ""}`}>
-          {/* Desktop asymmetric: row 1 = 1 tall + 2 regular; row 2 = 2 regular + 1 tall */}
-          <div className="hidden lg:grid gap-3" style={{ gridTemplateColumns: "2fr 1fr 1fr", gridTemplateRows: "280px 280px" }}>
-            {categories.slice(0, 6).map((cat, i) => {
-              const isFirstTall = i === 0;
-              const isLastTall = i === 5;
+          <div className="hidden lg:grid grid-cols-4 gap-3" style={{ gridTemplateRows: "440px" }}>
+            {categories.slice(0, 4).map((cat) => {
               return (
                 <div
                   key={cat.name}
                   className="category-card"
-                  style={{
-                    gridRow: isFirstTall ? "1 / 3" : isLastTall ? "1 / 3" : undefined,
-                    gridColumn: isLastTall ? "3" : undefined,
-                  }}
                   onClick={() => onNavigate("home")}
                 >
                   <div className="cat-overlay absolute inset-0 z-10"
                     style={{ background: "linear-gradient(to top, rgba(5,5,5,0.93) 0%, rgba(5,5,5,0.3) 50%, transparent 100%)" }} />
-                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" loading="lazy" />
+                  <CategoryMedia src={cat.image} alt={cat.name} />
                   <div className="absolute bottom-0 left-0 right-0 z-20 p-5">
                     <div className="cat-label">
                       <h3 className="font-display font-800 text-white text-xl mb-1">{cat.name}</h3>
@@ -319,7 +329,7 @@ function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
 
           {/* Mobile / tablet: 2-column grid */}
           <div className="grid lg:hidden grid-cols-2 sm:grid-cols-4 gap-3">
-            {categories.slice(0, 8).map((cat) => (
+            {categories.slice(0, 4).map((cat) => (
               <div
                 key={cat.name}
                 className="category-card"
@@ -328,7 +338,7 @@ function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
               >
                 <div className="cat-overlay absolute inset-0 z-10"
                   style={{ background: "linear-gradient(to top, rgba(5,5,5,0.92) 0%, rgba(5,5,5,0.1) 55%, transparent 100%)" }} />
-                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" loading="lazy" />
+                <CategoryMedia src={cat.image} alt={cat.name} />
                 <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
                   <div className="cat-label">
                     <h3 className="font-display font-700 text-white text-sm mb-0.5">{cat.name}</h3>
@@ -347,11 +357,15 @@ function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
 /* ═══════════════════════════════════════════════════════════
    BEST SELLERS
 ═══════════════════════════════════════════════════════════ */
+const MOST_WANTED_IDS = ["buds-pro", "gan-65w", "neckpro", "powerslim-20k"];
+
 function BestSellers({ onViewProduct, onAddToCart }: Pick<HomePageProps, "onViewProduct" | "onAddToCart">) {
   const { products } = useStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
-  const bestsellers = products.filter((p) => p.badge === "BEST SELLER" || p.rating >= 4.7);
+  const bestsellers = MOST_WANTED_IDS
+    .map((id) => products.find((p) => p.id === id))
+    .filter((p): p is Product => Boolean(p));
   const ref = useRef<HTMLDivElement>(null);
   const visible = useReveal(ref);
 
@@ -451,11 +465,25 @@ function NewArrivals({ onViewProduct }: Pick<HomePageProps, "onViewProduct" | "o
               style={{ minHeight: 420 }}
               onClick={() => onViewProduct(newProducts[0])}
             >
-              <img
-                src={newProducts[0].image}
-                alt={newProducts[0].name}
-                className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-600"
-              />
+              {newProducts[0].video ? (
+                <video
+                  src={newProducts[0].video}
+                  poster={newProducts[0].image}
+                  aria-label={newProducts[0].imageAlt || newProducts[0].name}
+                  className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-600"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  src={newProducts[0].image}
+                  alt={newProducts[0].imageAlt || newProducts[0].name}
+                  className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-600"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/50 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#050505]/20" />
 
@@ -498,12 +526,27 @@ function NewArrivals({ onViewProduct }: Pick<HomePageProps, "onViewProduct" | "o
                 onClick={() => onViewProduct(p)}
               >
                 <div className="w-36 flex-shrink-0 relative overflow-hidden bg-[#0d0d0d]">
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    className="w-full h-full object-cover group-hover:scale-107 transition-transform duration-500"
-                    style={{ transformOrigin: "center" }}
-                  />
+                  {p.video ? (
+                    <video
+                      src={p.video}
+                      poster={p.image}
+                      aria-label={p.imageAlt || p.name}
+                      className="w-full h-full object-cover group-hover:scale-107 transition-transform duration-500"
+                      style={{ transformOrigin: "center" }}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={p.image}
+                      alt={p.imageAlt || p.name}
+                      className="w-full h-full object-cover group-hover:scale-107 transition-transform duration-500"
+                      style={{ transformOrigin: "center" }}
+                    />
+                  )}
                 </div>
                 <div className="flex-1 p-5 flex flex-col justify-center">
                   <span className="badge badge-new mb-2.5 inline-block">New</span>
@@ -551,11 +594,25 @@ function FeaturedProduct({ onViewProduct, onAddToCart }: Pick<HomePageProps, "on
             <div className="grid grid-cols-1 lg:grid-cols-2 items-center">
               {/* Image side */}
               <div className="relative h-72 lg:h-[520px] overflow-hidden bg-[#0d0d0d]">
-                <img
-                  src={featured.image}
-                  alt={featured.name}
-                  className="w-full h-full object-cover"
-                />
+                {featured.video ? (
+                  <video
+                    src={featured.video}
+                    poster={featured.image}
+                    aria-label={featured.imageAlt || featured.name}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <img
+                    src={featured.image}
+                    alt={featured.imageAlt || featured.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent lg:to-[#0c0c0c] to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] to-transparent lg:hidden" />
               </div>
@@ -609,8 +666,10 @@ function FeaturedProduct({ onViewProduct, onAddToCart }: Pick<HomePageProps, "on
 function AllProducts({ onViewProduct, onAddToCart }: Pick<HomePageProps, "onViewProduct" | "onAddToCart">) {
   const { products } = useStore();
   const [activeFilter, setActiveFilter] = useState("All");
-  const filters = ["All", "Audio", "Power", "Smart Gadgets", "Desk Setup"];
-  const filtered = activeFilter === "All" ? products : products.filter((p) => p.category === activeFilter);
+  const filters = ["All", "Audio", "Chargers", "Cables"];
+  const filtered = activeFilter === "All"
+    ? products
+    : products.filter((p) => p.category.split(" / ").includes(activeFilter));
   const ref = useRef<HTMLDivElement>(null);
   const visible = useReveal(ref);
 

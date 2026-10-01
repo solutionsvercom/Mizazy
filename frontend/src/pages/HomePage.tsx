@@ -74,7 +74,7 @@ function Hero({ onShop }: { onShop: () => void }) {
   useEffect(() => { const t = setTimeout(() => setMounted(true), 60); return () => clearTimeout(t); }, []);
 
   const trustItems = [
-    "★ 4.8 Average Rating", "50K+ Happy Customers", "Free Delivery on ₹999+",
+    "★ 4.8 Average Rating", "12.2K+ Happy Customers", "Free Delivery on ₹999+",
     "1 Year Warranty", "7-Day Returns", "200+ Cities Covered",
     "BIS Certified Products", "EMI Available on All Orders", "Secure Payments",
   ];
@@ -148,7 +148,7 @@ function Hero({ onShop }: { onShop: () => void }) {
           <div className={`flex gap-8 sm:gap-12 transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             style={{ transitionDelay: "0.7s" }}>
             {[
-              { value: "50K+", label: "Happy Customers" },
+              { value: "12.2K+", label: "Happy Customers" },
               { value: "4.8★", label: "Avg Rating" },
               { value: "200+", label: "Cities" },
             ].map((s) => (

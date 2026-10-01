@@ -3,12 +3,19 @@ import { Router } from "express";
 import User from "../models/User.js";
 import { protect, signToken } from "../middleware/auth.js";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "../mailer.js";
-import { getAppUrl } from "../config.js";
+import { getAllowedOrigins, getPublicSiteUrl } from "../config.js";
 
 const router = Router();
 
 const RESET_MINUTES = 30;
 const hashToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
+
+/** Origin is only trusted when allow-listed, so a forged header can't redirect reset links elsewhere. */
+function resetLinkBase(req) {
+  const origin = String(req.get("origin") || "").replace(/\/+$/, "");
+  if (origin && getAllowedOrigins().includes(origin)) return origin;
+  return getPublicSiteUrl();
+}
 
 router.post("/register", async (req, res) => {
   try {
@@ -63,7 +70,7 @@ router.post("/forgot-password", async (req, res) => {
     user.resetPasswordExpires = new Date(Date.now() + RESET_MINUTES * 60 * 1000);
     await user.save();
 
-    const resetUrl = `${getAppUrl()}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
+    const resetUrl = `${resetLinkBase(req)}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
     try {
       await sendPasswordResetEmail(user, resetUrl, RESET_MINUTES);
     } catch (err) {

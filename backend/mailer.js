@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { getAppUrl } from "./config.js";
+import { getPublicSiteUrl } from "./config.js";
 
 /**
  * Two sender mailboxes:
@@ -79,7 +79,7 @@ function layout(title, body) {
           <h1 style="font-size:20px;color:#111;margin:0 0 14px;">${title}</h1>
           ${body}
         </td></tr>
-        <tr><td style="padding:16px 28px;background:#fafafa;color:#999;font-size:12px;">MIZAZY · ${escapeHtml(getAppUrl())}</td></tr>
+        <tr><td style="padding:16px 28px;background:#fafafa;color:#999;font-size:12px;">MIZAZY · ${escapeHtml(getPublicSiteUrl())}</td></tr>
       </table>
     </td></tr></table></body></html>`;
 }
@@ -150,7 +150,7 @@ export async function sendOrderEmails(order, user) {
           `Thank you for your order${first ? `, ${first}` : ""}!`,
           `<p style="font-size:14px;color:#555;margin:0 0 18px;">Your order <strong>${escapeHtml(order.orderNumber)}</strong> has been confirmed. You can track it anytime from <strong>My Account</strong> on our website.</p>
            ${orderDetailsHtml(order)}
-           ${button(`${getAppUrl()}/track`, "Track your order")}`
+           ${button(`${getPublicSiteUrl()}/track`, "Track your order")}`
         ),
       })
     );
@@ -208,7 +208,7 @@ export async function sendWelcomeEmail(user) {
       html: layout(
         `Welcome to MIZAZY, ${first}!`,
         `<p style="font-size:14px;color:#555;margin:0;">Your account is ready. Sign in anytime to track your orders, save products to your wishlist and check out faster.</p>
-         ${button(getAppUrl(), "Start shopping")}`
+         ${button(getPublicSiteUrl(), "Start shopping")}`
       ),
     }),
   ]));

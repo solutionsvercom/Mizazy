@@ -14,6 +14,13 @@ export function getAppUrl() {
   );
 }
 
+/** Public URL shown to customers (emails); never a localhost address. */
+export function getPublicSiteUrl() {
+  const configured = (process.env.APP_URL || process.env.CLIENT_URL || "").trim().replace(/\/+$/, "");
+  if (configured && !/localhost|127\.0\.0\.1/.test(configured)) return configured;
+  return SITE.production;
+}
+
 export function getAllowedOrigins() {
   const fromEnv = (process.env.ALLOWED_ORIGINS || "")
     .split(",")

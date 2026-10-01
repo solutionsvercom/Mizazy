@@ -195,6 +195,88 @@ export async function sendPasswordResetEmail(user, resetUrl, minutesValid) {
   });
 }
 
+const emailImage = (url) =>
+  String(url || "").replace("/image/upload/", "/image/upload/f_jpg,q_auto,w_160,h_160,c_pad,b_white/");
+
+/** Subject + HTML for an abandoned-cart reminder. stage: "first" | "offer" | "daily". */
+export function cartReminderEmail({ user, items, stage, coupon, checkoutUrl, unsubscribeUrl }) {
+  const firstName = String(user.name || "").trim().split(" ")[0];
+  const first = escapeHtml(firstName);
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const rows = items
+    .map(
+      (i) => `
+        <tr>
+          <td width="72" style="padding:10px 12px 10px 0;border-bottom:1px solid #eee;">
+            ${i.image ? `<img src="${escapeHtml(emailImage(i.image))}" width="64" height="64" alt="" style="display:block;border-radius:8px;border:1px solid #eee;"/>` : ""}
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;color:#222;">
+            <strong>${escapeHtml(i.name)}</strong><br/>
+            <span style="color:#777;font-size:13px;">${i.colorName ? `${escapeHtml(i.colorName)} · ` : ""}Qty ${i.quantity}</span>
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap;font-size:14px;color:#222;">${rupees(i.price * i.quantity)}</td>
+        </tr>`
+    )
+    .join("");
+
+  const couponBox = coupon
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;"><tr><td style="border:2px dashed #D4A520;border-radius:10px;padding:16px;text-align:center;background:#fffaf0;">
+         <div style="font-size:13px;color:#777;">Your personal code for ${coupon.percent}% off</div>
+         <div style="font-size:24px;font-weight:bold;letter-spacing:3px;color:#111;margin-top:6px;">${escapeHtml(coupon.code)}</div>
+         <div style="font-size:12px;color:#999;margin-top:6px;">Sign in with ${escapeHtml(user.email)} and apply it at checkout.</div>
+       </td></tr></table>`
+    : "";
+
+  const copy = {
+    first: {
+      subject: `${firstName}, you left something in your cart`,
+      title: "Continue where you left off",
+      intro: "Your MIZAZY picks are still waiting in your cart. Complete your checkout before they sell out.",
+      cta: "Complete checkout",
+    },
+    offer: {
+      subject: `${firstName}, here's ${coupon?.percent}% off your cart`,
+      title: `${coupon?.percent}% off, just for you`,
+      intro: "Still thinking it over? Here's a little something to help you decide. Use your personal code below and save on your cart.",
+      cta: `Checkout with ${coupon?.percent}% off`,
+    },
+    daily: {
+      subject: `Your cart is still waiting · ${coupon?.percent}% off with ${coupon?.code}`,
+      title: "Your cart is still waiting",
+      intro: `The items you picked are still in your cart and your ${coupon?.percent}% off code is still active.`,
+      cta: "Complete checkout",
+    },
+  }[stage];
+
+  const html = layout(
+    `${copy.title}${stage === "first" && first ? `, ${first}` : ""}`,
+    `<p style="font-size:14px;color:#555;margin:0 0 18px;">${copy.intro}</p>
+     ${couponBox}
+     <table width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+     <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#222;margin-top:12px;">
+       <tr><td style="padding:3px 0;font-weight:bold;">Cart subtotal</td><td style="text-align:right;font-weight:bold;">${rupees(subtotal)}</td></tr>
+       ${coupon ? `<tr><td style="padding:3px 0;color:#2e7d32;">With ${escapeHtml(coupon.code)}</td><td style="text-align:right;color:#2e7d32;font-weight:bold;">${rupees(subtotal - Math.round(subtotal * (coupon.percent / 100)))}</td></tr>` : ""}
+     </table>
+     ${button(checkoutUrl, copy.cta)}
+     <p style="font-size:12px;color:#999;margin:28px 0 0;">You're receiving this because you left items in your cart at MIZAZY. <a href="${escapeHtml(unsubscribeUrl)}" style="color:#999;">Stop cart reminders</a></p>`
+  );
+  return { subject: copy.subject, html };
+}
+
+/** Abandoned-cart reminder, sent from the customer mailbox. Throws if the mailbox is not configured or sending fails. */
+export async function sendCartReminderEmail(params) {
+  const box = mailbox("customer");
+  if (!box) throw new Error("Customer mailbox not configured");
+  const { subject, html } = cartReminderEmail(params);
+  await box.transport.sendMail({
+    from: box.from,
+    to: params.user.email,
+    subject,
+    html,
+    headers: { "List-Unsubscribe": `<${params.unsubscribeUrl}>` },
+  });
+}
+
 /** Welcome email after registration, sent from the customer mailbox. Never throws. */
 export async function sendWelcomeEmail(user) {
   const box = mailbox("customer");

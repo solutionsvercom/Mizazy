@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CartItem } from "../data";
 import { MIZAZY_LOGO_URL } from "../brand";
 import { api, PlacedOrder } from "../api";
@@ -71,7 +71,10 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
   const [delivery, setDelivery] = useState<"standard" | "express">("standard");
   const [payment, setPayment] = useState<"upi" | "card" | "cod" | "netbanking">("upi");
   const [upiId, setUpiId] = useState("");
-  const [coupon, setCoupon] = useState("");
+  const [coupon, setCoupon] = useState(
+    () => (new URLSearchParams(window.location.search).get("coupon") || "").trim().toUpperCase()
+  );
+  const linkCoupon = useRef(coupon);
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponPercent, setCouponPercent] = useState(10);
   const [couponError, setCouponError] = useState("");
@@ -85,16 +88,24 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
   const shipping = delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
   const total = subtotal - couponDiscount + shipping;
 
-  const applyCoupon = async () => {
+  const applyCoupon = async (code = coupon) => {
     setCouponError("");
     try {
-      const data = await api.validateCoupon(coupon);
+      const data = await api.validateCoupon(code);
       setCouponPercent(data.discountPercent);
       setCouponApplied(true);
     } catch (err) {
       setCouponError(err instanceof Error ? err.message : "Invalid coupon");
     }
   };
+
+  // Coupon links from cart reminder emails apply automatically once the customer is signed in.
+  useEffect(() => {
+    if (!user || !linkCoupon.current) return;
+    const code = linkCoupon.current;
+    linkCoupon.current = "";
+    void applyCoupon(code);
+  }, [user]);
 
   const placeOrder = async () => {
     setPlacing(true);
@@ -488,7 +499,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
                   disabled={couponApplied}
                 />
                 <button
-                  onClick={applyCoupon}
+                  onClick={() => applyCoupon()}
                   disabled={couponApplied}
                   className="px-3 rounded-lg border border-white/12 text-white/60 text-sm font-display font-600 hover:border-white/25 hover:text-white transition-all disabled:opacity-50"
                 >

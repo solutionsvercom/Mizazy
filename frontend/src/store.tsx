@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { Product, CartItem, Review, products as fallbackProducts, categories as fallbackCategories, reviews as fallbackReviews, bundles as fallbackBundles } from "./data";
 import { api, AuthUser, getToken, setToken } from "./api";
 import { optimizeImageField, optimizeProductMedia } from "./media";
@@ -76,6 +76,49 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
   }, [cart]);
+
+  const userId = user?._id;
+  const [cartSynced, setCartSynced] = useState(false);
+  const productsRef = useRef(products);
+  productsRef.current = products;
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
+
+  // After sign-in, restore the account's saved cart if this browser's cart is empty
+  // (e.g. the customer opened a cart reminder email on another device).
+  useEffect(() => {
+    setCartSynced(false);
+    if (!userId) return;
+    let cancelled = false;
+    api
+      .getCart()
+      .then(({ items }) => {
+        if (cancelled || cartRef.current.length || !items.length) return;
+        const restored = items.flatMap((item) => {
+          const product = productsRef.current.find((p) => p.id === item.productId);
+          return product ? [{ product, quantity: item.quantity, color: item.color, colorName: item.colorName }] : [];
+        });
+        if (restored.length) setCart(restored);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setCartSynced(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  // Keep the server copy current so abandoned-cart reminders reflect what the customer left behind.
+  useEffect(() => {
+    if (!userId || !cartSynced) return;
+    const timer = setTimeout(() => {
+      api
+        .saveCart(cart.map((i) => ({ productId: i.product.id, quantity: i.quantity, color: i.color, colorName: i.colorName })))
+        .catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [cart, userId, cartSynced]);
 
   useEffect(() => {
     if (!user) localStorage.setItem(WISH_KEY, JSON.stringify(wishlist));

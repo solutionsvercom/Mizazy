@@ -51,6 +51,9 @@ export const api = {
   wishlist: () => request<string[]>("/auth/wishlist"),
   addWishlist: (id: string) => request<string[]>(`/auth/wishlist/${id}`, { method: "POST" }),
   removeWishlist: (id: string) => request<string[]>(`/auth/wishlist/${id}`, { method: "DELETE" }),
+  getCart: () => request<{ items: SavedCartItem[] }>("/cart"),
+  saveCart: (items: SavedCartItem[]) =>
+    request<{ items: SavedCartItem[] }>("/cart", { method: "PUT", body: JSON.stringify({ items }) }),
   validateCoupon: (code: string) =>
     request<{ code: string; discountPercent: number }>("/coupons/validate", {
       method: "POST",
@@ -85,6 +88,13 @@ export interface AuthUser {
   phone: string;
   addresses: Address[];
   wishlist: string[];
+}
+
+export interface SavedCartItem {
+  productId: string;
+  quantity: number;
+  color: string;
+  colorName: string;
 }
 
 export interface PlaceOrderBody {

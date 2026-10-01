@@ -13,9 +13,11 @@ import authRoutes from "./routes/auth.js";
 import orderRoutes from "./routes/orders.js";
 import catalogRoutes from "./routes/catalog.js";
 import uploadRoutes from "./routes/upload.js";
+import cartRoutes from "./routes/cart.js";
 import { getAllowedOrigins, getAppUrl } from "./config.js";
 import { configureCloudinary } from "./cloudinary.js";
 import { verifyMailer } from "./mailer.js";
+import { startCartReminders } from "./cartReminders.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -55,6 +57,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/cart", cartRoutes);
 app.use("/api", catalogRoutes);
 
 app.use("/api", (_req, res) => {
@@ -112,6 +115,7 @@ async function start() {
     console.log(`Mail (orders): ${status.orders}`);
     console.log(`Mail (customer): ${status.customer}`);
   });
+  startCartReminders();
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`MIZAZY running on port ${PORT}`);
   });

@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, select: false },
     addresses: { type: [addressSchema], default: [] },
     wishlist: { type: [String], default: [] },
+    cartRemindersOptOut: { type: Boolean, default: false },
     resetPasswordHash: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },
   },

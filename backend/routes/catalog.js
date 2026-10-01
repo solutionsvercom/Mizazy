@@ -60,11 +60,15 @@ router.post("/reviews", optionalAuth, async (req, res) => {
   }
 });
 
-router.post("/coupons/validate", async (req, res) => {
+router.post("/coupons/validate", optionalAuth, async (req, res) => {
   try {
     const code = String(req.body.code || "").toUpperCase().trim();
     const coupon = await Coupon.findOne({ code, active: true });
     if (!coupon) return res.status(404).json({ message: "Invalid coupon code" });
+    if (coupon.user) {
+      if (!req.user) return res.status(401).json({ message: "Please sign in to use this personal coupon" });
+      if (!coupon.user.equals(req.user._id)) return res.status(403).json({ message: "This coupon belongs to another account" });
+    }
     res.json({ code: coupon.code, discountPercent: coupon.discountPercent });
   } catch (err) {
     res.status(500).json({ message: err.message });

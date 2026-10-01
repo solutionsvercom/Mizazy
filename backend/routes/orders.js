@@ -2,6 +2,7 @@ import { Router } from "express";
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import Coupon from "../models/Coupon.js";
+import Cart from "../models/Cart.js";
 import { optionalAuth, protect } from "../middleware/auth.js";
 import { sendOrderEmails } from "../mailer.js";
 
@@ -116,8 +117,8 @@ router.post("/", optionalAuth, async (req, res) => {
     let couponDiscount = 0;
     let couponCode;
     if (coupon) {
-      const found = await Coupon.findOne({ code: String(coupon).toUpperCase(), active: true });
-      if (found) {
+      const found = await Coupon.findOne({ code: String(coupon).toUpperCase().trim(), active: true });
+      if (found && (!found.user || (req.user && found.user.equals(req.user._id)))) {
         couponDiscount = Math.round(subtotal * (found.discountPercent / 100));
         couponCode = found.code;
       }
@@ -158,6 +159,14 @@ router.post("/", optionalAuth, async (req, res) => {
     });
 
     await Promise.all(dbProducts.map((p) => p.save()));
+    if (req.user) {
+      await Cart.updateOne(
+        { user: req.user._id },
+        { $set: { items: [], remindersSent: 0, lastReminderAt: null } }
+      );
+      // Personal abandoned-cart codes are single use; a new abandonment re-activates it.
+      if (couponCode) await Coupon.updateOne({ code: couponCode, user: req.user._id }, { $set: { active: false } });
+    }
 
     res.status(201).json(serializeOrder(order));
     sendOrderEmails(order, req.user);

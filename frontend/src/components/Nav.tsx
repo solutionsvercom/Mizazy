@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { CartItem } from "../data";
 import { MIZAZY_NAV_LOGO_URL } from "../brand";
+import { useStore } from "../store";
 
 interface NavProps {
   onNavigate: (page: string) => void;
@@ -13,6 +14,7 @@ interface NavProps {
 }
 
 export default function Nav({ onNavigate, cartItems, onCartOpen, onSearchOpen, onAccount, onWishlist, currentPage }: NavProps) {
+  const { user } = useStore();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
@@ -121,12 +123,14 @@ export default function Nav({ onNavigate, cartItems, onCartOpen, onSearchOpen, o
             </button>
 
             {/* Track (desktop) */}
-            <button
-              onClick={() => onNavigate("track")}
-              className="hidden md:block text-[10px] font-display font-600 text-white/40 hover:text-white/80 transition-colors tracking-[0.18em] uppercase px-3 py-2"
-            >
-              Track
-            </button>
+            {user && (
+              <button
+                onClick={() => onNavigate("track")}
+                className="hidden md:block text-[10px] font-display font-600 text-white/40 hover:text-white/80 transition-colors tracking-[0.18em] uppercase px-3 py-2"
+              >
+                Track
+              </button>
+            )}
 
             {/* Divider */}
             <div className="hidden md:block w-px h-5 bg-white/10 mx-1" />
@@ -183,12 +187,14 @@ export default function Nav({ onNavigate, cartItems, onCartOpen, onSearchOpen, o
             >
               My Account
             </button>
-            <button
-              onClick={() => { onNavigate("track"); setMobileOpen(false); }}
-              className="w-full text-left px-4 py-3 rounded-xl font-display font-500 text-white/40 hover:text-white/70 hover:bg-white/04 transition-all text-base"
-            >
-              Track My Order
-            </button>
+            {user && (
+              <button
+                onClick={() => { onNavigate("track"); setMobileOpen(false); }}
+                className="w-full text-left px-4 py-3 rounded-xl font-display font-500 text-white/40 hover:text-white/70 hover:bg-white/04 transition-all text-base"
+              >
+                Track My Order
+              </button>
+            )}
           </div>
         )}
       </nav>

@@ -17,6 +17,45 @@ const steps = [
   { num: 4, label: "Review" },
 ];
 
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chandigarh",
+  "Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jammu and Kashmir",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Ladakh",
+  "Lakshadweep",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Puducherry",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
 export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: CheckoutPageProps) {
   const { user } = useStore();
   const defaultAddress = user?.addresses?.[0];
@@ -186,7 +225,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
                     <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">State</label>
                     <select className="input-dark" value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })}>
                       <option value="">Select state</option>
-                      {["Maharashtra", "Karnataka", "Delhi", "Tamil Nadu", "Telangana", "Gujarat", "Rajasthan", "West Bengal", "UP", "MP"].map((s) => (
+                      {INDIAN_STATES.map((s) => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>

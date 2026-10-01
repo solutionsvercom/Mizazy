@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "../store";
 import { api, PlacedOrder } from "../api";
 import { Product } from "../data";
+import SignInGate from "../components/SignInGate";
 
 interface AccountPageProps {
   onNavigate: (page: string) => void;
@@ -25,16 +26,19 @@ export default function AccountPage({ onNavigate, onViewProduct, onAuthOpen }: A
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#050505] py-20 px-6">
-        <div className="max-w-lg mx-auto text-center bg-[#0e0e0e] border border-white/07 rounded-2xl p-10">
-          <p className="section-label mb-3">My MIZAZY</p>
-          <h1 className="section-heading text-3xl text-white mb-3">Sign in to continue</h1>
-          <p className="text-white/40 mb-8">Track orders, save gadgets, and manage delivery addresses.</p>
-          <button className="btn-gold justify-center w-full py-3.5" onClick={onAuthOpen}>Sign in / Register</button>
-        </div>
-      </div>
+      <SignInGate
+        title="Sign in to continue"
+        description="Track orders, save gadgets, and manage delivery addresses."
+        onAuthOpen={onAuthOpen}
+        onNavigate={onNavigate}
+      />
     );
   }
+
+  const handleSignOut = () => {
+    logout();
+    onNavigate("home");
+  };
 
   const saved = products.filter((p) => wishlist.includes(p.id));
   const tabs: { id: Tab; label: string }[] = [
@@ -53,7 +57,7 @@ export default function AccountPage({ onNavigate, onViewProduct, onAuthOpen }: A
             <h1 className="section-heading text-4xl text-white">Hello, {user.name.split(" ")[0]}</h1>
             <p className="text-white/40 text-sm mt-2">{user.email} · {user.phone}</p>
           </div>
-          <button onClick={logout} className="btn-outline py-2.5 px-5 text-sm">Sign out</button>
+          <button onClick={handleSignOut} className="btn-outline py-2.5 px-5 text-sm">Sign out</button>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-8">

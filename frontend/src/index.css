@@ -474,6 +474,14 @@ select.input-dark {
   background-repeat: no-repeat;
   background-position: right 1rem center;
   padding-right: 2.5rem;
+  color-scheme: dark;
+}
+select.input-dark option {
+  background-color: #111111;
+  color: #ffffff;
+}
+select.input-dark option[value=""] {
+  color: rgba(255,255,255,0.5);
 }
 
 /* ── Qty button ─────────────────────────────────────────────── */

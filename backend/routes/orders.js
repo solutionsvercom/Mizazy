@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import Coupon from "../models/Coupon.js";
 import { optionalAuth, protect } from "../middleware/auth.js";
+import { sendOrderEmails } from "../mailer.js";
 
 const router = Router();
 
@@ -159,22 +160,19 @@ router.post("/", optionalAuth, async (req, res) => {
     await Promise.all(dbProducts.map((p) => p.save()));
 
     res.status(201).json(serializeOrder(order));
+    sendOrderEmails(order, req.user);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-router.get("/track", async (req, res) => {
+router.get("/track", protect, async (req, res) => {
   try {
-    const orderNumber = String(req.query.orderNumber || "").trim();
-    const phone = String(req.query.phone || "").trim();
+    const orderNumber = String(req.query.orderNumber || "").trim().toUpperCase();
     if (!orderNumber) return res.status(400).json({ message: "Order ID is required" });
 
-    const order = await Order.findOne({ orderNumber: new RegExp(`^${orderNumber}$`, "i") });
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    if (phone && order.phone !== phone) {
-      return res.status(404).json({ message: "Order not found for this mobile number" });
-    }
+    const order = await Order.findOne({ orderNumber, user: req.user._id });
+    if (!order) return res.status(404).json({ message: "No order with this ID on your account" });
     res.json(serializeOrder(order));
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -190,9 +188,9 @@ router.get("/mine", protect, async (req, res) => {
   }
 });
 
-router.get("/:orderNumber", optionalAuth, async (req, res) => {
+router.get("/:orderNumber", protect, async (req, res) => {
   try {
-    const order = await Order.findOne({ orderNumber: req.params.orderNumber });
+    const order = await Order.findOne({ orderNumber: req.params.orderNumber, user: req.user._id });
     if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(serializeOrder(order));
   } catch (err) {

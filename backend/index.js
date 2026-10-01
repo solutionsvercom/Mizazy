@@ -15,6 +15,7 @@ import catalogRoutes from "./routes/catalog.js";
 import uploadRoutes from "./routes/upload.js";
 import { getAllowedOrigins, getAppUrl } from "./config.js";
 import { configureCloudinary } from "./cloudinary.js";
+import { verifyMailer } from "./mailer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -107,6 +108,10 @@ async function start() {
   } else {
     console.warn("Cloudinary not configured — set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET");
   }
+  verifyMailer().then((status) => {
+    console.log(`Mail (orders): ${status.orders}`);
+    console.log(`Mail (customer): ${status.customer}`);
+  });
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`MIZAZY running on port ${PORT}`);
   });

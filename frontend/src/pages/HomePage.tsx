@@ -106,7 +106,7 @@ function Hero({ onShop }: { onShop: () => void }) {
           <div className={`flex items-center gap-2.5 mb-8 transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             style={{ transitionDelay: "0.1s" }}>
             <span className="live-dot" />
-            <span className="section-label">New Collection 2024</span>
+            <span className="section-label">New Collection 2026</span>
           </div>
 
           {/* Hero headline — word by word reveal */}
@@ -1006,6 +1006,8 @@ function Newsletter() {
    FOOTER
 ═══════════════════════════════════════════════════════════ */
 function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
+  const { user } = useStore();
+  const accountLinks = ["My Account", "My Orders", ...(user ? ["Track Order"] : []), "Wishlist", "Reviews"];
   return (
     <footer className="bg-[#080808] border-t border-white/055 pt-16 pb-32 md:pb-12">
       <div className="max-w-7xl mx-auto px-6">
@@ -1039,7 +1041,7 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
           {[
             { title: "Shop", links: ["All Products", "New Arrivals", "Best Sellers", "Offers", "Bundles"] },
             { title: "Help", links: ["Contact Us", "Shipping Info", "Returns", "Warranty", "FAQs"] },
-            { title: "Account", links: ["My Account", "My Orders", "Track Order", "Wishlist", "Reviews"] },
+            { title: "Account", links: accountLinks },
             { title: "Legal", links: ["Privacy Policy", "Terms of Use", "Refund Policy", "Shipping Policy"] },
           ].map((col) => (
             <div key={col.title}>
@@ -1065,7 +1067,7 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
         <div className="section-divider mb-8" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-white/20 text-xs">
-          <p className="font-body">© 2024 MIZAZY Technologies Pvt. Ltd. All rights reserved.</p>
+          <p className="font-body">© 2026 MIZAZY Technologies Pvt. Ltd. All rights reserved.</p>
           <div className="flex items-center gap-3">
             {["UPI", "Visa", "Mastercard", "Rupay", "PayTM", "EMI"].map((p) => (
               <span key={p} className="px-2 py-1 border border-white/07 rounded text-[9px] font-display font-600 text-white/25">

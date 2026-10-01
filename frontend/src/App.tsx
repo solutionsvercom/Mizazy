@@ -12,8 +12,9 @@ import CheckoutPage from "./pages/CheckoutPage";
 import TrackingPage from "./pages/TrackingPage";
 import ConfirmationPage from "./pages/ConfirmationPage";
 import AccountPage from "./pages/AccountPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
-type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account";
+type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password";
 
 interface Toast {
   id: number;
@@ -27,6 +28,7 @@ const SIMPLE_PAGES: Record<string, Page> = {
   "/track": "track",
   "/account": "account",
   "/confirmation": "confirmation",
+  "/reset-password": "reset-password",
 };
 
 function productFromPath(products: Product[]): Product | null {
@@ -261,6 +263,7 @@ export default function App() {
       {page === "track" && (
         <TrackingPage
           onNavigate={navigate}
+          onAuthOpen={() => setAuthOpen(true)}
           prefillOrder={trackPrefill}
         />
       )}
@@ -271,6 +274,10 @@ export default function App() {
           onNavigate={navigate}
           onTrack={handleTrack}
         />
+      )}
+
+      {page === "reset-password" && (
+        <ResetPasswordPage onNavigate={navigate} onAuthOpen={() => setAuthOpen(true)} />
       )}
 
       {page === "account" && (

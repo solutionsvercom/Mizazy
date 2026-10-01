@@ -1,52 +1,59 @@
 import { useState, useEffect } from "react";
 import { api, PlacedOrder } from "../api";
+import { useStore } from "../store";
+import SignInGate from "../components/SignInGate";
+import { optimizeImage } from "../media";
 
 interface TrackingPageProps {
   onNavigate: (page: string) => void;
+  onAuthOpen: () => void;
   prefillOrder?: string;
 }
 
-export default function TrackingPage({ onNavigate, prefillOrder }: TrackingPageProps) {
-  const [orderId, setOrderId] = useState(prefillOrder || "");
-  const [mobile, setMobile] = useState("");
+export default function TrackingPage({ onNavigate, onAuthOpen, prefillOrder }: TrackingPageProps) {
+  const { user } = useStore();
+  const [orders, setOrders] = useState<PlacedOrder[]>([]);
   const [order, setOrder] = useState<PlacedOrder | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!prefillOrder) return;
+    if (!user) {
+      setOrders([]);
+      setOrder(null);
+      return;
+    }
     let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const result = await api.trackOrder(prefillOrder);
-        if (!cancelled) setOrder(result);
-      } catch {
-        /* show the form if the saved order is not in this database yet */
-      } finally {
+    setLoading(true);
+    setError("");
+    api
+      .myOrders()
+      .then((list) => {
+        if (cancelled) return;
+        setOrders(list);
+        if (prefillOrder) setOrder(list.find((o) => o.orderNumber === prefillOrder) ?? null);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load your orders");
+      })
+      .finally(() => {
         if (!cancelled) setLoading(false);
-      }
-    })();
+      });
     return () => {
       cancelled = true;
     };
-  }, [prefillOrder]);
+  }, [user, prefillOrder]);
 
-  const handleTrack = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!orderId) return;
-    setLoading(true);
-    setError("");
-    try {
-      const result = await api.trackOrder(orderId, mobile || undefined);
-      setOrder(result);
-    } catch (err) {
-      setOrder(null);
-      setError(err instanceof Error ? err.message : "Order not found");
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!user) {
+    return (
+      <SignInGate
+        title="Sign in to track your order"
+        description="Order status is available for orders placed from your MIZAZY account."
+        onAuthOpen={onAuthOpen}
+        onNavigate={onNavigate}
+      />
+    );
+  }
 
   const deliveryDate = order?.estimatedDelivery
     ? new Date(order.estimatedDelivery).toLocaleDateString("en-IN", {
@@ -73,51 +80,54 @@ export default function TrackingPage({ onNavigate, prefillOrder }: TrackingPageP
         <div className="text-center mb-12">
           <p className="section-label mb-3">Real-time</p>
           <h1 className="section-heading text-4xl sm:text-5xl text-white mb-3">Track My Order</h1>
-          <p className="text-white/40">Enter your order details to see live delivery status</p>
+          <p className="text-white/40">Live delivery status of your MIZAZY orders</p>
         </div>
 
         {!order ? (
-          <form
-            onSubmit={handleTrack}
-            className="bg-[#0e0e0e] rounded-2xl border border-white/07 p-8 mb-8"
-          >
-            <div className="space-y-4">
-              <div>
-                <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">Order ID</label>
-                <input
-                  className="input-dark"
-                  placeholder="MZ-XXXXXXXX"
-                  value={orderId}
-                  onChange={(e) => setOrderId(e.target.value)}
-                />
+          <div className="space-y-4 mb-8">
+            {loading && (
+              <div className="bg-[#0e0e0e] rounded-2xl border border-white/07 p-8 flex items-center justify-center gap-2 text-white/50 text-sm">
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/>
+                </svg>
+                Fetching your orders...
               </div>
-              <div>
-                <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">Mobile Number</label>
-                <input
-                  className="input-dark"
-                  placeholder="Registered mobile number"
-                  value={mobile}
-                  maxLength={10}
-                  onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-                />
+            )}
+            {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+            {!loading && !error && orders.length === 0 && (
+              <div className="bg-[#0e0e0e] rounded-2xl border border-white/07 p-10 text-center">
+                <p className="font-display font-600 text-white/60 mb-2">You haven't placed any orders yet</p>
+                <p className="text-white/35 text-sm mb-6">Once you order, its live status will show up here.</p>
+                <button className="btn-primary justify-center py-3 px-6" onClick={() => onNavigate("home")}>Shop MIZAZY</button>
               </div>
-              {error && <p className="text-red-400 text-sm">{error}</p>}
+            )}
+            {!loading && orders.map((o) => (
               <button
-                type="submit"
-                disabled={loading || !orderId}
-                className="btn-primary w-full justify-center py-3.5"
+                key={o.orderNumber}
+                onClick={() => setOrder(o)}
+                className="w-full text-left bg-[#0e0e0e] rounded-2xl border border-white/07 hover:border-[#D4A520]/30 p-5 flex items-center gap-4 transition-colors"
               >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/>
-                    </svg>
-                    Fetching status...
-                  </span>
-                ) : "Track Order"}
+                <img
+                  src={optimizeImage(o.items[0]?.image ?? "", 200)}
+                  alt={o.items[0]?.name}
+                  className="w-14 h-14 rounded-xl object-cover bg-[#111] flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-700 text-white truncate">
+                    {o.items[0]?.name}
+                    {o.items.length > 1 && <span className="text-white/40 font-500"> +{o.items.length - 1} more</span>}
+                  </p>
+                  <p className="text-white/35 text-xs mt-1">
+                    Order #{o.orderNumber} · {new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#D4A520]/12 border border-[#D4A520]/25 flex-shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-[#D4A520] animate-pulse" />
+                  <span className="font-display font-700 text-[#D4A520] text-xs">{o.currentStatusLabel}</span>
+                </div>
               </button>
-            </div>
-          </form>
+            ))}
+          </div>
         ) : (
           <div className="space-y-6">
             <div className="bg-[#0e0e0e] rounded-2xl border border-white/07 p-6 sm:p-8">
@@ -217,7 +227,7 @@ export default function TrackingPage({ onNavigate, prefillOrder }: TrackingPageP
                 onClick={() => setOrder(null)}
                 className="btn-outline flex-1 justify-center py-3"
               >
-                Track Another Order
+                {orders.length > 1 ? "View All Orders" : "Back to My Orders"}
               </button>
               <button
                 onClick={() => onNavigate("home")}

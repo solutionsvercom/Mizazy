@@ -1,8 +1,14 @@
+import crypto from "crypto";
 import { Router } from "express";
 import User from "../models/User.js";
 import { protect, signToken } from "../middleware/auth.js";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "../mailer.js";
+import { getAppUrl } from "../config.js";
 
 const router = Router();
+
+const RESET_MINUTES = 30;
+const hashToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
 
 router.post("/register", async (req, res) => {
   try {
@@ -22,6 +28,7 @@ router.post("/register", async (req, res) => {
       token: signToken(user._id),
       user: user.toJSON(),
     });
+    sendWelcomeEmail(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -34,6 +41,62 @@ router.post("/login", async (req, res) => {
     if (!user || !(await user.matchPassword(password || ""))) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
+    res.json({ token: signToken(user._id), user: user.toJSON() });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post("/forgot-password", async (req, res) => {
+  const genericReply = {
+    message: "If an account exists for this email, a password reset link has been sent. Please check your inbox.",
+  };
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.json(genericReply);
+
+    const token = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordHash = hashToken(token);
+    user.resetPasswordExpires = new Date(Date.now() + RESET_MINUTES * 60 * 1000);
+    await user.save();
+
+    const resetUrl = `${getAppUrl()}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
+    try {
+      await sendPasswordResetEmail(user, resetUrl, RESET_MINUTES);
+    } catch (err) {
+      console.error("Password reset email failed:", err.message);
+      return res.status(503).json({ message: "We couldn't send the reset email right now. Please try again later." });
+    }
+    res.json(genericReply);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const token = String(req.body.token || "");
+    const password = String(req.body.password || "");
+    if (!email || !token) return res.status(400).json({ message: "This reset link is invalid. Please request a new one." });
+    if (password.length < 6) return res.status(400).json({ message: "Password must be at least 6 characters" });
+
+    const user = await User.findOne({ email }).select("+resetPasswordHash +resetPasswordExpires");
+    const valid =
+      user?.resetPasswordHash &&
+      user.resetPasswordExpires > new Date() &&
+      crypto.timingSafeEqual(Buffer.from(user.resetPasswordHash), Buffer.from(hashToken(token)));
+    if (!valid) {
+      return res.status(400).json({ message: "This reset link is invalid or has expired. Please request a new one." });
+    }
+
+    user.password = password;
+    user.resetPasswordHash = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
     res.json({ token: signToken(user._id), user: user.toJSON() });
   } catch (err) {
     res.status(500).json({ message: err.message });

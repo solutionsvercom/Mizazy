@@ -32,6 +32,7 @@ interface StoreValue {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, phone: string, password: string) => Promise<void>;
   logout: () => void;
+  startSession: (token: string, user: AuthUser) => void;
   toggleWishlist: (productId: string) => Promise<void>;
 }
 
@@ -117,12 +118,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshUser]);
 
+  const startSession = useCallback((token: string, sessionUser: AuthUser) => {
+    setToken(token);
+    setUser(sessionUser);
+    setWishlist(sessionUser.wishlist || []);
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const data = await api.login({ email, password });
-    setToken(data.token);
-    setUser(data.user);
-    setWishlist(data.user.wishlist || []);
-  }, []);
+    startSession(data.token, data.user);
+  }, [startSession]);
 
   const register = useCallback(async (name: string, email: string, phone: string, password: string) => {
     const data = await api.register({ name, email, phone, password });
@@ -168,9 +173,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      startSession,
       toggleWishlist,
     }),
-    [products, categories, reviews, bundles, loading, user, wishlist, cart, refreshUser, login, register, logout, toggleWishlist]
+    [products, categories, reviews, bundles, loading, user, wishlist, cart, refreshUser, login, register, logout, startSession, toggleWishlist]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

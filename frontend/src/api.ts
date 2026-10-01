@@ -39,6 +39,10 @@ export const api = {
     request<{ token: string; user: AuthUser }>("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   login: (body: { email: string; password: string }) =>
     request<{ token: string; user: AuthUser }>("/auth/login", { method: "POST", body: JSON.stringify(body) }),
+  forgotPassword: (email: string) =>
+    request<{ message: string }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (body: { email: string; token: string; password: string }) =>
+    request<{ token: string; user: AuthUser }>("/auth/reset-password", { method: "POST", body: JSON.stringify(body) }),
   me: () => request<AuthUser>("/auth/me"),
   updateMe: (body: { name?: string; phone?: string }) =>
     request<AuthUser>("/auth/me", { method: "PUT", body: JSON.stringify(body) }),
@@ -54,11 +58,8 @@ export const api = {
     }),
   placeOrder: (body: PlaceOrderBody) =>
     request<PlacedOrder>("/orders", { method: "POST", body: JSON.stringify(body) }),
-  trackOrder: (orderNumber: string, phone?: string) => {
-    const qs = new URLSearchParams({ orderNumber });
-    if (phone) qs.set("phone", phone);
-    return request<PlacedOrder>(`/orders/track?${qs.toString()}`);
-  },
+  trackOrder: (orderNumber: string) =>
+    request<PlacedOrder>(`/orders/track?${new URLSearchParams({ orderNumber }).toString()}`),
   myOrders: () => request<PlacedOrder[]>("/orders/mine"),
   newsletter: (email: string) =>
     request<{ ok: boolean; message: string }>("/newsletter", {

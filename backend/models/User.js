@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, select: false },
     addresses: { type: [addressSchema], default: [] },
     wishlist: { type: [String], default: [] },
+    resetPasswordHash: { type: String, select: false },
+    resetPasswordExpires: { type: Date, select: false },
   },
   { timestamps: true }
 );
@@ -38,6 +40,8 @@ userSchema.methods.matchPassword = function matchPassword(plain) {
 userSchema.set("toJSON", {
   transform(_doc, ret) {
     delete ret.password;
+    delete ret.resetPasswordHash;
+    delete ret.resetPasswordExpires;
     delete ret.__v;
     return ret;
   },

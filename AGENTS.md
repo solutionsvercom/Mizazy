@@ -55,6 +55,14 @@ Environment variables in Hostinger (do **not** upload `.env`):
 - `CLOUDINARY_API_KEY` — from Cloudinary dashboard
 - `CLOUDINARY_API_SECRET` — from Cloudinary dashboard
 - `CLOUDINARY_FOLDER` — optional, default `mizazy`
+- `SMTP_HOST` — e.g. `smtp.hostinger.com`
+- `SMTP_PORT` — `465` (SSL) or `587` (STARTTLS)
+- `SMTP_SECURE` — `true` for 465, `false` for 587
+- `ORDERS_SMTP_USER` / `ORDERS_SMTP_PASS` — orders mailbox (`orders@mizazy.com`) for order confirmations and new-order alerts
+- `ORDERS_MAIL_FROM` — optional, e.g. `MIZAZY Orders <orders@mizazy.com>`
+- `CUSTOMER_SMTP_USER` / `CUSTOMER_SMTP_PASS` — customer mailbox (`customer@mizazy.com`) for forgot-password and welcome emails
+- `CUSTOMER_MAIL_FROM` — optional, e.g. `MIZAZY Customer Care <customer@mizazy.com>`
+- `ADMIN_EMAIL` — MIZAZY inbox that receives every new order (defaults to the orders mailbox)
 - `PORT` — set automatically by Hostinger (do not hardcode)
 
 Site URLs used by the app:

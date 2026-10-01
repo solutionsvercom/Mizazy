@@ -60,6 +60,9 @@ const orderSchema = new mongoose.Schema(
       enum: ["confirmed", "packed", "shipped", "transit", "out", "delivered", "cancelled"],
       default: "confirmed",
     },
+    // When set, tracking shows the admin-chosen status instead of the automatic time-based progress.
+    statusSetByAdmin: { type: Boolean, default: false },
+    statusUpdatedAt: Date,
     timeline: { type: [timelineSchema], default: [] },
     trackingNumber: String,
     shippingPartner: { type: String, default: "BlueDart Express" },

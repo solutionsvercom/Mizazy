@@ -14,6 +14,7 @@ import orderRoutes from "./routes/orders.js";
 import catalogRoutes from "./routes/catalog.js";
 import uploadRoutes from "./routes/upload.js";
 import cartRoutes from "./routes/cart.js";
+import adminRoutes from "./routes/admin.js";
 import { getAllowedOrigins, getAppUrl } from "./config.js";
 import { configureCloudinary } from "./cloudinary.js";
 import { verifyMailer } from "./mailer.js";
@@ -58,6 +59,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api", catalogRoutes);
 
 app.use("/api", (_req, res) => {

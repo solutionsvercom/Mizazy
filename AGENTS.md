@@ -72,6 +72,13 @@ Site URLs used by the app:
 
 What the build does: installs frontend deps, builds React into `backend/public`, then Express serves API + static site together.
 
+## Admin panel
+
+- URL: `/admin` (e.g. https://mizazy.com/admin), API under `/api/admin`.
+- Admin accounts live in the `admins` collection (separate from customer `users`); passwords are bcrypt-hashed and changed from **Settings** in the panel.
+- Manages orders (including manual tracking status), products, bundles, categories, reviews, coupons, customers, abandoned carts and subscribers.
+- Image uploads (`/api/upload/*`) require an admin session.
+
 ## Stack
 
 - MongoDB, Express, React 19, Node.js 20

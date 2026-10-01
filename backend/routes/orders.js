@@ -37,13 +37,14 @@ function progressFromAge(createdAt, delivery) {
   return idx;
 }
 
-function buildTimeline(createdAt, delivery, trackingNumber, city) {
-  const idx = progressFromAge(createdAt, delivery);
+function buildTimeline(createdAt, delivery, trackingNumber, city, manual) {
+  const idx = manual ? manual.idx : progressFromAge(createdAt, delivery);
   const start = new Date(createdAt);
   const hoursOffset = delivery === "express" ? [0, 0.2, 1, 4, 10, 20] : [0, 0.5, 2, 10, 28, 48];
 
   return STAGES.map((stage, i) => {
-    const t = new Date(start.getTime() + hoursOffset[i] * 36e5);
+    let t = new Date(start.getTime() + hoursOffset[i] * 36e5);
+    if (manual?.at) t = i === idx ? manual.at : new Date(Math.min(t.getTime(), manual.at.getTime()));
     let desc = stage.desc;
     if (stage.id === "shipped") desc = `Handed over to BlueDart logistics. Tracking: ${trackingNumber}`;
     if (stage.id === "transit") desc = `Your package is on its way. Currently at ${city || "Mumbai"} Hub.`;
@@ -56,13 +57,31 @@ function buildTimeline(createdAt, delivery, trackingNumber, city) {
   });
 }
 
-function serializeOrder(order) {
+export function serializeOrder(order) {
   const json = order.toJSON ? order.toJSON() : order;
+  const manualIdx = json.statusSetByAdmin ? STAGES.findIndex((s) => s.id === json.status) : -1;
+  const manualAt = json.statusUpdatedAt ? new Date(json.statusUpdatedAt) : null;
+
+  if (json.statusSetByAdmin && json.status === "cancelled") {
+    const timeline = buildTimeline(json.createdAt, json.delivery, json.trackingNumber, json.address?.city, {
+      idx: 0,
+      at: manualAt,
+    }).map((s, i) => ({ ...s, done: i === 0, active: false, time: i === 0 ? s.time : "—" }));
+    return {
+      ...json,
+      timeline,
+      status: "cancelled",
+      currentStatusLabel: "Cancelled",
+      currentStatusDesc: "This order has been cancelled.",
+    };
+  }
+
   const timeline = buildTimeline(
     json.createdAt,
     json.delivery,
     json.trackingNumber,
-    json.address?.city
+    json.address?.city,
+    manualIdx >= 0 ? { idx: manualIdx, at: manualAt } : undefined
   );
   const active = timeline.find((s) => s.active) || timeline[timeline.length - 1];
   return {

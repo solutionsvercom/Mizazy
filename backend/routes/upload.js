@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { protect } from "../middleware/auth.js";
+import { requireAdmin } from "../middleware/adminAuth.js";
 import { upload } from "../middleware/upload.js";
 import { deleteByPublicId, isCloudinaryReady, uploadBuffer } from "../cloudinary.js";
 
@@ -20,7 +20,7 @@ router.get("/status", (_req, res) => {
   res.json({ configured: isCloudinaryReady() });
 });
 
-router.post("/image", protect, upload.single("image"), async (req, res) => {
+router.post("/image", requireAdmin, upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No image file provided (field: image)" });
 
@@ -38,7 +38,7 @@ router.post("/image", protect, upload.single("image"), async (req, res) => {
   }
 });
 
-router.post("/images", protect, upload.array("images", 8), async (req, res) => {
+router.post("/images", requireAdmin, upload.array("images", 8), async (req, res) => {
   try {
     if (!req.files?.length) {
       return res.status(400).json({ message: "No image files provided (field: images)" });
@@ -55,7 +55,7 @@ router.post("/images", protect, upload.array("images", 8), async (req, res) => {
   }
 });
 
-router.delete("/image", protect, async (req, res) => {
+router.delete("/image", requireAdmin, async (req, res) => {
   try {
     const publicId = req.body.publicId || req.query.publicId;
     if (!publicId) return res.status(400).json({ message: "publicId is required" });

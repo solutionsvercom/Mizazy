@@ -56,7 +56,7 @@ const orderSchema = new mongoose.Schema(
     },
     // True once stock, cart, coupon and emails have been processed (immediately for COD, after payment for online).
     finalized: { type: Boolean, default: false },
-    // ₹1 Cashfree test payment placed by an admin; excluded from revenue.
+    // Test orders (e.g. the ₹1 Cashfree check) are excluded from revenue.
     isTest: { type: Boolean, default: false },
     coupon: String,
     totals: {

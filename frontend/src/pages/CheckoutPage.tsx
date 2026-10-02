@@ -4,8 +4,6 @@ import { MIZAZY_LOGO_URL } from "../brand";
 import { api, PlacedOrder } from "../api";
 import { useStore } from "../store";
 import { clearPendingPayment, openCashfreeCheckout, savePendingPayment } from "../cashfree";
-import { getAdminSessionToken, isTestPaymentCart } from "../testPayment";
-
 interface CheckoutPageProps {
   cart: CartItem[];
   onOrderPlaced: (order: PlacedOrder) => void;
@@ -99,8 +97,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
   const mrpTotal = cart.reduce((s, i) => s + i.product.mrp * i.quantity, 0);
   const savings = mrpTotal - subtotal;
   const couponDiscount = couponApplied ? Math.round(subtotal * (couponPercent / 100)) : 0;
-  const isTestPayment = isTestPaymentCart(cart);
-  const shipping = isTestPayment ? 0 : delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
+  const shipping = delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
   const total = subtotal - couponDiscount + shipping;
 
   const applyCoupon = async (code = coupon) => {
@@ -138,7 +135,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
         delivery,
         payment: { method: payment },
         coupon: couponApplied ? coupon : undefined,
-      }, isTestPayment ? getAdminSessionToken() : undefined);
+      });
       if (!order.cashfree) {
         onOrderPlaced(order);
         return;
@@ -167,9 +164,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
 
   const canProceed = () => {
     if (step === 1) return address.name && address.phone && address.address && address.city && address.state && address.pincode;
-    if (step === 3 && isOnline) return Boolean(onlinePay?.enabled);
-    if (step === 3 && isTestPayment) return false;
-    return true;
+    if (step === 3 && isOnline) return Boolean(onlinePay?.enabled);    return true;
   };
 
   const deliveryDate = (days: number) => {
@@ -377,10 +372,6 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
                   </div>
                 )}
 
-                {payment === "cod" && isTestPayment && (
-                  <p className="text-[#D4A520] text-xs mb-3">The ₹1 test payment needs UPI, Card or Net Banking.</p>
-                )}
-
                 {payment === "cod" && (
                   <div className="p-4 rounded-xl bg-[#5DD87A]/08 border border-[#5DD87A]/20">
                     <p className="text-[#5DD87A] font-display font-600 text-sm">Cash on Delivery available for your location.</p>
@@ -500,7 +491,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
               <hr className="border-white/06 mb-4" />
 
               {/* Coupon */}
-              <div className={`flex gap-2 mb-5 ${isTestPayment ? "hidden" : ""}`}>
+              <div className="flex gap-2 mb-5">
                 <input
                   className="input-dark flex-1 text-sm py-2"
                   placeholder="Coupon code"

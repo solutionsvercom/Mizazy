@@ -5,9 +5,7 @@ import Order from "../models/Order.js";
 import Coupon from "../models/Coupon.js";
 import Cart from "../models/Cart.js";
 import User from "../models/User.js";
-import { optionalAuth, protect } from "../middleware/auth.js";
-import { adminFromToken } from "../middleware/adminAuth.js";
-import { sendOrderEmails, sendPaymentReceiptEmail } from "../mailer.js";
+import { optionalAuth, protect } from "../middleware/auth.js";import { sendOrderEmails, sendPaymentReceiptEmail } from "../mailer.js";
 import { getAllowedOrigins, getPublicSiteUrl } from "../config.js";
 import { cashfreeMode, createCashfreeOrder, fetchCashfreePayment, isCashfreeConfigured } from "../cashfree.js";
 
@@ -99,9 +97,6 @@ export function serializeOrder(order) {
   };
 }
 
-/** ₹1 order admins can place to check the live Cashfree setup; never shown in the shop. */
-const TEST_PAYMENT = { productId: "mizazy-payment-test", name: "Cashfree Test Payment", price: 1 };
-
 /** Unpaid online orders stay hidden from the customer's order list and tracking. */
 const VISIBLE_TO_CUSTOMER = { $nor: [{ "payment.gateway": "cashfree", "payment.status": { $ne: "confirmed" } }] };
 
@@ -183,28 +178,15 @@ router.post("/", optionalAuth, async (req, res) => {
       return res.status(503).json({ message: "Online payment is not available right now. Please choose Cash on Delivery." });
     }
 
-    const isTest = items.some((i) => i.productId === TEST_PAYMENT.productId);
-    if (isTest) {
-      if (items.length !== 1 || !(await adminFromToken(req.get("x-admin-token")))) {
-        return res.status(403).json({ message: "The test payment is only available to signed-in MIZAZY admins." });
-      }
-      if (!online) return res.status(400).json({ message: "The test payment must use UPI, Card or Net Banking." });
-    }
-
     const productIds = items.map((i) => i.productId);
-    const dbProducts = isTest ? [] : await Product.find({ id: { $in: productIds } });
+    const dbProducts = await Product.find({ id: { $in: productIds } });
     const byId = Object.fromEntries(dbProducts.map((p) => [p.id, p]));
 
     const orderItems = [];
     let subtotal = 0;
     let mrpTotal = 0;
 
-    if (isTest) {
-      orderItems.push({ ...TEST_PAYMENT, image: "", color: "", colorName: "Test", quantity: 1, mrp: TEST_PAYMENT.price });
-      subtotal = mrpTotal = TEST_PAYMENT.price;
-    }
-
-    for (const item of isTest ? [] : items) {
+    for (const item of items) {
       const product = byId[item.productId];
       if (!product) return res.status(400).json({ message: `Product ${item.productId} not found` });
       const qty = Math.max(1, Math.min(10, Number(item.quantity) || 1));
@@ -227,7 +209,7 @@ router.post("/", optionalAuth, async (req, res) => {
 
     let couponDiscount = 0;
     let couponCode;
-    if (coupon && !isTest) {
+    if (coupon) {
       const found = await Coupon.findOne({ code: String(coupon).toUpperCase().trim(), active: true });
       if (found && (!found.user || (req.user && found.user.equals(req.user._id)))) {
         couponDiscount = Math.round(subtotal * (found.discountPercent / 100));
@@ -235,7 +217,7 @@ router.post("/", optionalAuth, async (req, res) => {
       }
     }
 
-    const shipping = isTest ? 0 : delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
+    const shipping = delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
     const total = subtotal - couponDiscount + shipping;
     const orderNumber = "MZ-" + Date.now().toString().slice(-8);
     const trackingNumber = "BD" + Date.now().toString().slice(-10);
@@ -249,9 +231,7 @@ router.post("/", optionalAuth, async (req, res) => {
       email: req.user?.email,
       address,
       items: orderItems,
-      delivery,
-      ...(isTest ? { isTest: true } : {}),
-      payment: {
+      delivery,      payment: {
         method,
         status: "pending",
         ...(online ? { gateway: "cashfree", accessToken: crypto.randomBytes(24).toString("hex") } : {}),

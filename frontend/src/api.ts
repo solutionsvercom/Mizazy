@@ -59,11 +59,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ code }),
     }),
-  placeOrder: (body: PlaceOrderBody, adminToken?: string | null) =>
+  placeOrder: (body: PlaceOrderBody) =>
     request<PlacedOrder & { cashfree?: { paymentSessionId: string; token: string } }>("/orders", {
       method: "POST",
       body: JSON.stringify(body),
-      headers: adminToken ? { "X-Admin-Token": adminToken } : undefined,
     }),
   paymentConfig: () => request<{ cashfree: boolean; mode: "sandbox" | "production" }>("/payments/config"),
   verifyPayment: (orderNumber: string, token: string) =>

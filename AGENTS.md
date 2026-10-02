@@ -83,8 +83,6 @@ What the build does: installs frontend deps, builds React into `backend/public`,
 - Webhook URL to add in the Cashfree dashboard: `https://mizazy.com/api/payments/cashfree/webhook`.
 - Payment receipts are sent from the payment mailbox.
 - Live (`production`) keys need the site domain whitelisted in Cashfree (Developers → Whitelisting), and only accept https return URLs.
-- `/payment-test` (admin session required) runs the real checkout with a ₹1 "Cashfree Test Payment" item, free shipping, no coupon/COD; those orders have `isTest: true` and are excluded from revenue.
-
 ## Admin panel
 
 - URL: `/admin` (e.g. https://mizazy.com/admin), API under `/api/admin`.

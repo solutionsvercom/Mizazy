@@ -14,8 +14,9 @@ import ConfirmationPage from "./pages/ConfirmationPage";
 import AccountPage from "./pages/AccountPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import FaqPage from "./pages/FaqPage";
+import ReviewsPage from "./pages/ReviewsPage";
 
-type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs";
+type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs" | "reviews";
 
 interface Toast {
   id: number;
@@ -31,6 +32,7 @@ const SIMPLE_PAGES: Record<string, Page> = {
   "/confirmation": "confirmation",
   "/reset-password": "reset-password",
   "/faqs": "faqs",
+  "/reviews": "reviews",
 };
 
 function productFromPath(products: Product[]): Product | null {
@@ -279,6 +281,8 @@ export default function App() {
       )}
 
       {page === "faqs" && <FaqPage onNavigate={navigate} />}
+
+      {page === "reviews" && <ReviewsPage onNavigate={navigate} />}
 
       {page === "reset-password" && (
         <ResetPasswordPage onNavigate={navigate} onAuthOpen={() => setAuthOpen(true)} />

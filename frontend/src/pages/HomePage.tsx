@@ -824,7 +824,7 @@ function WhySection() {
 /* ═══════════════════════════════════════════════════════════
    REVIEWS — with star breakdown
 ═══════════════════════════════════════════════════════════ */
-function ReviewsSection() {
+export function ReviewsSection() {
   const { reviews } = useStore();
   const [expanded, setExpanded] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -1033,7 +1033,7 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
               Premium technology made simple. Designed for everyday life.
             </p>
             <div className="flex gap-2.5">
-              {["IG", "X", "YT", "LI"].map((s) => (
+              {["IG", "YT"].map((s) => (
                 <button key={s}
                   className="w-8 h-8 rounded-lg border border-white/09 flex items-center justify-center text-white/30 hover:text-white hover:border-white/22 transition-all text-[10px] font-display font-700">
                   {s}
@@ -1062,6 +1062,7 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
                         if (FOOTER_TOPICS[l]) setInfoTopic(FOOTER_TOPICS[l]);
                         else if (l === "FAQs") onNavigate("faqs");
                         else if (l === "Track Order") onNavigate("track");
+                        else if (l === "Reviews") onNavigate("reviews");
                         else if (l === "My Account" || l === "My Orders" || l === "Wishlist") onNavigate("account");
                         else onNavigate("home");
                       }}
@@ -1079,7 +1080,12 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
         <div className="section-divider mb-8" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-white/20 text-xs">
-          <p className="font-body">© 2026 MIZAZY Technologies Pvt. Ltd. All rights reserved.</p>
+          <div className="flex flex-col items-center sm:items-start gap-1 text-center sm:text-left">
+            <p className="font-body">© 2026 MIZAZY Technologies Pvt. Ltd. All rights reserved.</p>
+            <p className="font-body">
+              Powered by <span className="text-white/40 font-600">Vercom Solutions</span>
+            </p>
+          </div>
           <div className="flex items-center gap-3">
             {["UPI", "Visa", "Mastercard", "Rupay", "PayTM", "EMI"].map((p) => (
               <span key={p} className="px-2 py-1 border border-white/07 rounded text-[9px] font-display font-600 text-white/25">

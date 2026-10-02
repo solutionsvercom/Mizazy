@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export const CONTACT_EMAIL = "contact@mizazy.com";
 
-export type InfoTopic = "contact" | "shipping" | "returns" | "warranty" | "privacy" | "terms" | "refund";
+export type InfoTopic = "contact" | "shipping" | "shippingPolicy" | "returns" | "warranty" | "privacy" | "terms" | "refund";
 
 const H = ({ children }: { children: ReactNode }) => (
   <h3 className="font-display font-700 text-white text-sm mt-5 mb-2 first:mt-0">{children}</h3>
@@ -78,6 +78,42 @@ export const INFO_TOPICS: Record<InfoTopic, { title: string; body: ReactNode }> 
         />
         <P>
           Questions about a delivery? Write to <Mail /> with your Order ID.
+        </P>
+      </>
+    ),
+  },
+  shippingPolicy: {
+    title: "Shipping Policy",
+    body: (
+      <>
+        <P>This policy explains how MIZAZY Technologies Pvt. Ltd. processes and delivers orders placed on mizazy.com.</P>
+        <H>Order processing</H>
+        <List
+          items={[
+            "Orders are processed after payment is confirmed, or immediately for Cash on Delivery orders.",
+            "Orders placed before 5 PM on business days are usually dispatched the same day; later orders are dispatched the next business day.",
+            "You receive an order confirmation email, and the tracking number once the order is shipped.",
+          ]}
+        />
+        <H>Shipping charges & timelines</H>
+        <List
+          items={[
+            "Standard delivery: 3–5 business days. Free on orders above ₹999, otherwise ₹99.",
+            "Express delivery: next day in serviceable cities for ₹149.",
+            "Timelines are estimates and may vary for remote locations, bad weather, sales periods or public holidays.",
+          ]}
+        />
+        <H>Delivery</H>
+        <List
+          items={[
+            "We currently ship within India only, through BlueDart Express and other trusted courier partners.",
+            "If a delivery attempt fails, the courier will try again. Orders that cannot be delivered are returned to us and refunded as per our Refund Policy.",
+            "Please check the package at delivery. If it is damaged or tampered with, report it within 48 hours with photos.",
+          ]}
+        />
+        <H>Address changes</H>
+        <P>
+          The delivery address can be changed only before the order is shipped. Email <Mail /> with your Order ID.
         </P>
       </>
     ),
@@ -249,5 +285,5 @@ export const FOOTER_TOPICS: Record<string, InfoTopic> = {
   "Privacy Policy": "privacy",
   "Terms of Use": "terms",
   "Refund Policy": "refund",
-  "Shipping Policy": "shipping",
+  "Shipping Policy": "shippingPolicy",
 };

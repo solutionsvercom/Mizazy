@@ -107,6 +107,7 @@ export const COLLECTIONS: CollectionConfig[] = [
       ], help: 'Changing this to "Confirmed / Paid" emails the customer a payment confirmation from payment@mizazy.com.' },
       { key: "trackingNumber", label: "Tracking number (Delhivery AWB)", type: "text", section: "Shipping", help: "Paste the AWB from Delhivery One, or use \"Create Delhivery shipment\" below to get one automatically. Customers then see live Delhivery tracking." },
       { key: "shippingPartner", label: "Shipping partner", type: "text", section: "Shipping", help: "Keep \"Delhivery\" for live tracking." },
+      { key: "shipmentError", label: "Automatic Delhivery shipment error", type: "readonly", section: "Shipping", help: "Shown only if the automatic Delhivery booking failed. Fix the cause, then use \"Create Delhivery shipment\" below." },
       { key: "courier", label: "Live Delhivery status", type: "readonly", section: "Shipping" },
       { key: "estimatedDelivery", label: "Estimated delivery", type: "date", section: "Shipping" },
       { key: "address.name", label: "Name", type: "text", section: "Delivery address" },

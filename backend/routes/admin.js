@@ -35,7 +35,7 @@ const COLLECTIONS = {
     search: ["orderNumber", "phone", "email", "address.name", "address.city", "trackingNumber"],
     sort: { createdAt: -1 },
     noCreate: true,
-    readOnly: ["orderNumber", "user", "statusSetByAdmin", "statusUpdatedAt", "timeline", "finalized", "courier"],
+    readOnly: ["orderNumber", "user", "statusSetByAdmin", "statusUpdatedAt", "timeline", "finalized", "courier", "shipmentError"],
   },
   users: {
     model: User,
@@ -238,7 +238,7 @@ router.post("/orders/:id/delhivery/create", async (req, res) => {
     const awb = await createShipment(order);
     const updated = await Order.findByIdAndUpdate(
       order._id,
-      { $set: { trackingNumber: awb, shippingPartner: "Delhivery", statusSetByAdmin: false }, $unset: { courier: 1 } },
+      { $set: { trackingNumber: awb, shippingPartner: "Delhivery", statusSetByAdmin: false }, $unset: { courier: 1, shipmentError: 1 } },
       { new: true }
     );
     const tracked = await refreshTracking(updated);

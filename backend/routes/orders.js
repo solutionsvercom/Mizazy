@@ -7,7 +7,7 @@ import Cart from "../models/Cart.js";
 import User from "../models/User.js";
 import { optionalAuth, protect } from "../middleware/auth.js";
 import { sendOrderEmails, sendPaymentConfirmationEmail, sendPaymentReceiptEmail } from "../mailer.js";
-import { delhiveryTrackingUrl, isDelhiveryConfigured, isDelhiveryPartner, trackShipment } from "../delhivery.js";
+import { createShipment, delhiveryTrackingUrl, isDelhiveryConfigured, isDelhiveryPartner, trackShipment } from "../delhivery.js";
 import { getAllowedOrigins, getPublicSiteUrl } from "../config.js";
 import { cashfreeMode, createCashfreeOrder, fetchCashfreePayment, isCashfreeConfigured } from "../cashfree.js";
 
@@ -229,6 +229,23 @@ export function startShipmentTracking() {
 /** Unpaid online orders stay hidden from the customer's order list and tracking. */
 const VISIBLE_TO_CUSTOMER = { $nor: [{ "payment.gateway": "cashfree", "payment.status": { $ne: "confirmed" } }] };
 
+/** Books the Delhivery shipment for a finalized order. Never throws; a failure is saved on the order for the admin. */
+async function autoCreateShipment(order) {
+  if (process.env.DELHIVERY_AUTO_SHIP === "false" || !isDelhiveryConfigured() || order.isTest || order.trackingNumber) return;
+  try {
+    const awb = await createShipment(order);
+    const updated = await Order.findOneAndUpdate(
+      { _id: order._id, trackingNumber: { $in: [null, ""] } },
+      { $set: { trackingNumber: awb, shippingPartner: "Delhivery" }, $unset: { shipmentError: 1 } },
+      { new: true }
+    );
+    if (updated) await refreshTracking(updated);
+  } catch (err) {
+    console.error(`Delhivery shipment for ${order.orderNumber} failed:`, err.message);
+    await Order.updateOne({ _id: order._id }, { $set: { shipmentError: err.message } }).catch(() => {});
+  }
+}
+
 /** Reduces stock, clears the saved cart, uses up a personal coupon and sends emails — exactly once per order. */
 async function finalizeOrder(orderId) {
   const order = await Order.findOneAndUpdate(
@@ -254,6 +271,7 @@ async function finalizeOrder(orderId) {
 
   sendOrderEmails(order, user);
   if (order.payment?.gateway === "cashfree") sendPaymentReceiptEmail(order, user);
+  autoCreateShipment(order);
   return order;
 }
 

@@ -71,6 +71,7 @@ Environment variables in Hostinger (do **not** upload `.env`):
 - `DELHIVERY_ENV` — `production` (default) or `staging`
 - `DELHIVERY_PICKUP_LOCATION` — pickup warehouse name exactly as registered in Delhivery One (needed to create shipments)
 - `DELHIVERY_DEFAULT_WEIGHT_GRAMS` — optional, per-item weight sent when creating shipments (default 500)
+- `DELHIVERY_AUTO_SHIP` — optional, `false` turns off automatic shipment booking for new orders (default on)
 - `PORT` — set automatically by Hostinger (do not hardcode)
 
 Site URLs used by the app:
@@ -89,7 +90,7 @@ What the build does: installs frontend deps, builds React into `backend/public`,
 - Live (`production`) keys need the site domain whitelisted in Cashfree (Developers → Whitelisting), and only accept https return URLs.
 ## Shipping (Delhivery)
 
-- New orders use shipping partner "Delhivery" and get a tracking number (AWB) only when shipped: either "Create Delhivery shipment" in the admin order editor, or paste the AWB from Delhivery One.
+- New orders are booked with Delhivery automatically once finalized (COD immediately, online orders after payment) and get the AWB as tracking number. If booking fails, the reason is saved in `shipmentError` and the admin can retry with "Create Delhivery shipment" (or paste an AWB from Delhivery One).
 - Live tracking is pulled from Delhivery (cached 15 min per order, plus an hourly background refresh) and drives the customer's tracking timeline and "Shipment Updates".
 - A delivered COD shipment marks the order paid and emails the payment confirmation.
 - Older orders (shipping partner not Delhivery) keep the previous time-based timeline.

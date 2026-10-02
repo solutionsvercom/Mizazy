@@ -424,8 +424,8 @@ function Editor({ config, doc, onCancel, onSaved, onDelete, onAuthError }: Edito
         <div className="rounded-xl border border-white/8 bg-[#0b0b0b] p-5 mt-6">
           <h2 className="text-[#D4A520] text-xs font-bold uppercase tracking-wider mb-2">Delhivery shipping</h2>
           <p className="text-white/40 text-xs mb-3">
-            Create the shipment in Delhivery straight from this order (the AWB is saved automatically), or refresh the live tracking the customer sees.
-            Tracking also refreshes on its own every hour.
+            New orders are booked with Delhivery automatically (COD right away, online orders after payment). If that failed, create it here;
+            you can also refresh the live tracking the customer sees. Tracking refreshes on its own every hour.
           </p>
           <div className="flex flex-wrap gap-2">
             {!(draft.trackingNumber && /delhivery/i.test(String(draft.shippingPartner || ""))) && (

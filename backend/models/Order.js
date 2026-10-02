@@ -77,6 +77,8 @@ const orderSchema = new mongoose.Schema(
     timeline: { type: [timelineSchema], default: [] },
     trackingNumber: String,
     shippingPartner: { type: String, default: "Delhivery" },
+    // Why automatic Delhivery shipment creation failed (cleared once a shipment exists).
+    shipmentError: String,
     // Latest live tracking from Delhivery for trackingNumber (AWB).
     courier: {
       awb: String,

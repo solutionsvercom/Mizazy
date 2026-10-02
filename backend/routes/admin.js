@@ -11,7 +11,8 @@ import User from "../models/User.js";
 import Subscriber from "../models/Subscriber.js";
 import Cart from "../models/Cart.js";
 import { requireAdmin, signAdminToken } from "../middleware/adminAuth.js";
-import { serializeOrder } from "./orders.js";
+import { refreshTracking, serializeOrder } from "./orders.js";
+import { createShipment, isDelhiveryConfigured, isDelhiveryPartner } from "../delhivery.js";
 import { sendPaymentConfirmationEmail } from "../mailer.js";
 
 const router = Router();
@@ -34,7 +35,7 @@ const COLLECTIONS = {
     search: ["orderNumber", "phone", "email", "address.name", "address.city", "trackingNumber"],
     sort: { createdAt: -1 },
     noCreate: true,
-    readOnly: ["orderNumber", "user", "statusSetByAdmin", "statusUpdatedAt", "timeline", "finalized"],
+    readOnly: ["orderNumber", "user", "statusSetByAdmin", "statusUpdatedAt", "timeline", "finalized", "courier"],
   },
   users: {
     model: User,
@@ -222,6 +223,51 @@ router.post("/orders/:id/payment-email", async (req, res) => {
   }
 });
 
+router.post("/orders/:id/delhivery/create", async (req, res) => {
+  try {
+    if (!isDelhiveryConfigured()) return res.status(400).json({ message: "Delhivery is not configured. Add DELHIVERY_API_TOKEN first." });
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: "Order not found" });
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.trackingNumber && isDelhiveryPartner(order.shippingPartner)) {
+      return res.status(400).json({ message: `This order already has a Delhivery AWB (${order.trackingNumber}).` });
+    }
+    if (order.payment?.gateway === "cashfree" && order.payment.status !== "confirmed") {
+      return res.status(400).json({ message: "This online order is not paid yet, so it can't be shipped." });
+    }
+    const awb = await createShipment(order);
+    const updated = await Order.findByIdAndUpdate(
+      order._id,
+      { $set: { trackingNumber: awb, shippingPartner: "Delhivery", statusSetByAdmin: false }, $unset: { courier: 1 } },
+      { new: true }
+    );
+    const tracked = await refreshTracking(updated);
+    res.json({ message: `Delhivery shipment created. AWB: ${awb}`, order: serializeOrder(tracked) });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.post("/orders/:id/delhivery/refresh", async (req, res) => {
+  try {
+    if (!isDelhiveryConfigured()) return res.status(400).json({ message: "Delhivery is not configured. Add DELHIVERY_API_TOKEN first." });
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: "Order not found" });
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!order.trackingNumber || !isDelhiveryPartner(order.shippingPartner)) {
+      return res.status(400).json({ message: 'Add the Delhivery AWB as the tracking number (shipping partner "Delhivery") and save first.' });
+    }
+    const tracked = await refreshTracking(order, { force: true });
+    const c = tracked.courier || {};
+    res.json({
+      message: `Delhivery: ${[c.status, c.location].filter(Boolean).join(" · ") || "no scans yet"}`,
+      order: serializeOrder(tracked),
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 router.put("/:collection/:id", async (req, res) => {
   const config = collectionFor(req, res);
   if (!config) return;
@@ -240,13 +286,18 @@ router.put("/:collection/:id", async (req, res) => {
         if (updates.status !== doc.status || !doc.statusSetByAdmin) updates.statusUpdatedAt = new Date();
       }
     }
+    const awbChanged =
+      req.params.collection === "orders" &&
+      ((updates.trackingNumber !== undefined && updates.trackingNumber !== doc.trackingNumber) ||
+        (updates.shippingPartner !== undefined && updates.shippingPartner !== doc.shippingPartner));
     const markedPaid =
       req.params.collection === "orders" && updates.payment?.status === "confirmed" && doc.payment?.status !== "confirmed";
     if (markedPaid && !updates.payment.paidAt) updates.payment = { ...updates.payment, paidAt: new Date() };
     // findByIdAndUpdate (not doc.save) because Product has a field named "isNew", which clashes with Mongoose internals.
     let query = config.model.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true, runValidators: true });
     if (config.populate) query = query.populate(config.populate);
-    const updated = await query;
+    let updated = await query;
+    if (awbChanged) updated = await refreshTracking(updated, { force: false }).catch(() => updated);
     let paymentEmail;
     if (markedPaid) {
       try {

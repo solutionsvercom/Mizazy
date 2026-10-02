@@ -158,8 +158,10 @@ export interface PlacedOrder {
   currentStatusLabel: string;
   currentStatusDesc: string;
   timeline: TimelineStep[];
-  trackingNumber: string;
+  trackingNumber?: string;
   shippingPartner: string;
+  trackingUrl?: string;
+  courierUpdates?: { status: string; location?: string; instructions?: string; time: string }[];
   estimatedDelivery: string;
   createdAt: string;
 }

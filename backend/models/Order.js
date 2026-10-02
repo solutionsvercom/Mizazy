@@ -76,7 +76,20 @@ const orderSchema = new mongoose.Schema(
     statusUpdatedAt: Date,
     timeline: { type: [timelineSchema], default: [] },
     trackingNumber: String,
-    shippingPartner: { type: String, default: "BlueDart Express" },
+    shippingPartner: { type: String, default: "Delhivery" },
+    // Latest live tracking from Delhivery for trackingNumber (AWB).
+    courier: {
+      awb: String,
+      status: String,
+      statusType: String,
+      location: String,
+      instructions: String,
+      statusAt: Date,
+      expectedDelivery: Date,
+      scans: { type: [{ status: String, location: String, instructions: String, time: Date, _id: false }], default: undefined },
+      fetchedAt: Date,
+      error: String,
+    },
     estimatedDelivery: Date,
   },
   { timestamps: true }

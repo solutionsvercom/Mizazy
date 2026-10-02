@@ -21,8 +21,8 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       { q: "How long does delivery take?", a: "Standard delivery takes 3–5 business days. Express delivery reaches you the next day in serviceable cities." },
       { q: "How much does shipping cost?", a: "Standard delivery is free on orders above ₹999, otherwise ₹99. Express delivery costs ₹149." },
-      { q: "How do I track my order?", a: "Sign in and open My Account → My Orders, or use Track Order. You'll see live status from confirmation to delivery, along with your BlueDart tracking number." },
-      { q: "Do you deliver all over India?", a: "We deliver to 200+ cities across India through BlueDart Express. Remote areas may take a little longer." },
+      { q: "How do I track my order?", a: "Sign in and open My Account → My Orders, or use Track Order. You'll see live status from confirmation to delivery, along with your Delhivery tracking number and live shipment updates once it ships." },
+      { q: "Do you deliver all over India?", a: "We deliver across India through Delhivery. Remote areas may take a little longer." },
     ],
   },
   {

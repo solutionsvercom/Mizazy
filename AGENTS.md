@@ -67,6 +67,10 @@ Environment variables in Hostinger (do **not** upload `.env`):
 - `ADMIN_EMAIL` — MIZAZY inbox that receives every new order (defaults to the orders mailbox)
 - `CASHFREE_APP_ID` / `CASHFREE_SECRET_KEY` — Cashfree Payments API keys (Dashboard → Developers → API Keys)
 - `CASHFREE_ENV` — `sandbox` for test keys, `production` for live keys
+- `DELHIVERY_API_TOKEN` — Delhivery One API token (Settings → API Setup)
+- `DELHIVERY_ENV` — `production` (default) or `staging`
+- `DELHIVERY_PICKUP_LOCATION` — pickup warehouse name exactly as registered in Delhivery One (needed to create shipments)
+- `DELHIVERY_DEFAULT_WEIGHT_GRAMS` — optional, per-item weight sent when creating shipments (default 500)
 - `PORT` — set automatically by Hostinger (do not hardcode)
 
 Site URLs used by the app:
@@ -83,6 +87,13 @@ What the build does: installs frontend deps, builds React into `backend/public`,
 - Webhook URL to add in the Cashfree dashboard: `https://mizazy.com/api/payments/cashfree/webhook`.
 - Payment receipts are sent from the payment mailbox.
 - Live (`production`) keys need the site domain whitelisted in Cashfree (Developers → Whitelisting), and only accept https return URLs.
+## Shipping (Delhivery)
+
+- New orders use shipping partner "Delhivery" and get a tracking number (AWB) only when shipped: either "Create Delhivery shipment" in the admin order editor, or paste the AWB from Delhivery One.
+- Live tracking is pulled from Delhivery (cached 15 min per order, plus an hourly background refresh) and drives the customer's tracking timeline and "Shipment Updates".
+- A delivered COD shipment marks the order paid and emails the payment confirmation.
+- Older orders (shipping partner not Delhivery) keep the previous time-based timeline.
+
 ## Admin panel
 
 - URL: `/admin` (e.g. https://mizazy.com/admin), API under `/api/admin`.

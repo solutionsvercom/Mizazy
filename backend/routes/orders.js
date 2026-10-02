@@ -5,7 +5,9 @@ import Order from "../models/Order.js";
 import Coupon from "../models/Coupon.js";
 import Cart from "../models/Cart.js";
 import User from "../models/User.js";
-import { optionalAuth, protect } from "../middleware/auth.js";import { sendOrderEmails, sendPaymentReceiptEmail } from "../mailer.js";
+import { optionalAuth, protect } from "../middleware/auth.js";
+import { sendOrderEmails, sendPaymentConfirmationEmail, sendPaymentReceiptEmail } from "../mailer.js";
+import { delhiveryTrackingUrl, isDelhiveryConfigured, isDelhiveryPartner, trackShipment } from "../delhivery.js";
 import { getAllowedOrigins, getPublicSiteUrl } from "../config.js";
 import { cashfreeMode, createCashfreeOrder, fetchCashfreePayment, isCashfreeConfigured } from "../cashfree.js";
 
@@ -14,7 +16,7 @@ const router = Router();
 const STAGES = [
   { id: "confirmed", label: "Order Confirmed", desc: "Your order has been received and confirmed." },
   { id: "packed", label: "Packed", desc: "Your MIZAZY gadget has been carefully packed and quality-checked." },
-  { id: "shipped", label: "Shipped", desc: "Handed over to BlueDart logistics." },
+  { id: "shipped", label: "Shipped", desc: "Handed over to our courier partner." },
   { id: "transit", label: "In Transit", desc: "Your package is on its way." },
   { id: "out", label: "Out for Delivery", desc: "Assigned to delivery agent." },
   { id: "delivered", label: "Delivered", desc: "Package delivered." },
@@ -27,12 +29,15 @@ function formatTime(date) {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: "Asia/Kolkata",
   });
 }
 
+const AGE_OFFSETS = { express: [0, 0.2, 1, 4, 10, 20], standard: [0, 0.5, 2, 10, 28, 48] };
+
 function progressFromAge(createdAt, delivery) {
   const hours = Math.max(0, (Date.now() - new Date(createdAt).getTime()) / 36e5);
-  const thresholds = delivery === "express" ? [0, 0.2, 1, 4, 10, 20] : [0, 0.5, 2, 10, 28, 48];
+  const thresholds = AGE_OFFSETS[delivery === "express" ? "express" : "standard"];
   let idx = 0;
   for (let i = 0; i < thresholds.length; i++) {
     if (hours >= thresholds[i]) idx = i;
@@ -40,61 +45,185 @@ function progressFromAge(createdAt, delivery) {
   return idx;
 }
 
-function buildTimeline(createdAt, delivery, trackingNumber, city, manual) {
-  const idx = manual ? manual.idx : progressFromAge(createdAt, delivery);
-  const start = new Date(createdAt);
-  const hoursOffset = delivery === "express" ? [0, 0.2, 1, 4, 10, 20] : [0, 0.5, 2, 10, 28, 48];
+/** Maps a Delhivery status to a STAGES index, or "cancelled" / "returned". */
+function courierStage(c) {
+  const status = String(c?.status || "");
+  const type = String(c?.statusType || "").toUpperCase();
+  if (type === "RT" || /\brto\b|return/i.test(status)) return "returned";
+  if (type === "CN" || /cancel/i.test(status)) return "cancelled";
+  if (type === "DL" || /^delivered$/i.test(status)) return 5;
+  if (/dispatched|out for delivery/i.test(status)) return 4;
+  if (/not picked|manifest|pickup|scheduled/i.test(status) || type === "PP") return 1;
+  if (/picked up/i.test(status) || type === "PU") return 2;
+  if (/transit|pending|reached|received|bagged|connected/i.test(status)) return 3;
+  return 2;
+}
+
+const isFinalCourierStatus = (c) => {
+  const stage = courierStage(c);
+  return stage === 5 || stage === "cancelled" || (stage === "returned" && String(c.statusType).toUpperCase() === "DL");
+};
+
+const courierText = (c) =>
+  [c.status, c.location].filter(Boolean).join(" · ") + (c.instructions && c.instructions !== c.status ? ` — ${c.instructions}` : "");
+
+function buildTimeline(json, idx, { manualAt, courier } = {}) {
+  const start = new Date(json.createdAt);
+  const offsets = AGE_OFFSETS[json.delivery === "express" ? "express" : "standard"];
+  const legacy = !isDelhiveryPartner(json.shippingPartner);
+
+  // Earliest courier scan for each stage, used as that stage's time.
+  const stageTimes = {};
+  for (const scan of courier?.scans || []) {
+    const s = courierStage({ status: scan.status });
+    if (typeof s === "number" && scan.time && (!stageTimes[s] || new Date(scan.time) < stageTimes[s])) stageTimes[s] = new Date(scan.time);
+  }
 
   return STAGES.map((stage, i) => {
-    let t = new Date(start.getTime() + hoursOffset[i] * 36e5);
-    if (manual?.at) t = i === idx ? manual.at : new Date(Math.min(t.getTime(), manual.at.getTime()));
+    let time = "—";
+    if (i <= idx) {
+      if (courier) {
+        const t = i === 0 ? start : i === idx && courier.statusAt ? new Date(courier.statusAt) : stageTimes[i];
+        time = t ? formatTime(t) : "—";
+      } else {
+        let t = new Date(start.getTime() + offsets[i] * 36e5);
+        if (manualAt) t = i === idx ? manualAt : new Date(Math.min(t.getTime(), manualAt.getTime()));
+        time = formatTime(t);
+      }
+    }
     let desc = stage.desc;
-    if (stage.id === "shipped") desc = `Handed over to BlueDart logistics. Tracking: ${trackingNumber}`;
-    if (stage.id === "transit") desc = `Your package is on its way. Currently at ${city || "Mumbai"} Hub.`;
-    return {
-      ...stage,
-      time: i <= idx ? formatTime(t) : "—",
-      done: i < idx,
-      active: i === idx,
-    };
+    if (stage.id === "shipped" && json.trackingNumber) {
+      desc = `Handed over to ${json.shippingPartner || "our courier partner"}. Tracking: ${json.trackingNumber}`;
+    }
+    if (stage.id === "transit" && legacy) desc = `Your package is on its way. Currently at ${json.address?.city || "Mumbai"} Hub.`;
+    if (courier && i === idx && i > 0) desc = courierText(courier) || desc;
+    return { ...stage, desc, time, done: i < idx, active: i === idx };
   });
+}
+
+function haltedOrder(json, { label, desc, doneThrough, at, courier }) {
+  const timeline = buildTimeline(json, doneThrough, { manualAt: at, courier }).map((s, i) => ({
+    ...s,
+    done: i <= doneThrough,
+    active: false,
+    time: i <= doneThrough ? s.time : "—",
+  }));
+  return { status: "cancelled", label, desc, timeline };
 }
 
 export function serializeOrder(order) {
   const json = order.toJSON ? order.toJSON() : { ...order };
   if (json.payment) json.payment = { ...json.payment, accessToken: undefined };
-  const manualIdx = json.statusSetByAdmin ? STAGES.findIndex((s) => s.id === json.status) : -1;
+  const delhivery = isDelhiveryPartner(json.shippingPartner);
+  const courier = json.courier?.status && json.courier.awb === json.trackingNumber ? json.courier : null;
+  if (courier?.expectedDelivery) json.estimatedDelivery = courier.expectedDelivery;
+
+  const extras = {
+    trackingUrl: delhivery && json.trackingNumber ? delhiveryTrackingUrl(json.trackingNumber) : undefined,
+    courierUpdates: (courier?.scans || []).slice(0, 30).map((s) => ({
+      status: s.status,
+      location: s.location,
+      instructions: s.instructions,
+      time: s.time ? formatTime(new Date(s.time)) : "",
+    })),
+  };
   const manualAt = json.statusUpdatedAt ? new Date(json.statusUpdatedAt) : null;
+  const stage = courier ? courierStage(courier) : null;
+  const finish = ({ status, label, desc, timeline }) => ({
+    ...json,
+    ...extras,
+    timeline,
+    status,
+    currentStatusLabel: label,
+    currentStatusDesc: desc,
+  });
 
   if (json.statusSetByAdmin && json.status === "cancelled") {
-    const timeline = buildTimeline(json.createdAt, json.delivery, json.trackingNumber, json.address?.city, {
-      idx: 0,
-      at: manualAt,
-    }).map((s, i) => ({ ...s, done: i === 0, active: false, time: i === 0 ? s.time : "—" }));
-    return {
-      ...json,
-      timeline,
-      status: "cancelled",
-      currentStatusLabel: "Cancelled",
-      currentStatusDesc: "This order has been cancelled.",
-    };
+    return finish(haltedOrder(json, { label: "Cancelled", desc: "This order has been cancelled.", doneThrough: 0, at: manualAt }));
+  }
+  if (stage === "cancelled") {
+    return finish(haltedOrder(json, { label: "Cancelled", desc: courierText(courier) || "This shipment has been cancelled.", doneThrough: 0, courier }));
+  }
+  if (stage === "returned") {
+    return finish({
+      ...haltedOrder(json, { label: "Returned", desc: `This shipment is being returned to MIZAZY. ${courierText(courier)}`.trim(), doneThrough: 2, courier }),
+      status: "returned",
+    });
   }
 
-  const timeline = buildTimeline(
-    json.createdAt,
-    json.delivery,
-    json.trackingNumber,
-    json.address?.city,
-    manualIdx >= 0 ? { idx: manualIdx, at: manualAt } : undefined
-  );
+  const manualIdx = json.statusSetByAdmin ? STAGES.findIndex((s) => s.id === json.status) : -1;
+  const adminIsNewer = manualIdx >= 0 && (!courier || (manualAt && courier.statusAt && manualAt > new Date(courier.statusAt)));
+  let timeline;
+  if (courier && !adminIsNewer) {
+    timeline = buildTimeline(json, stage, { courier });
+  } else if (manualIdx >= 0) {
+    timeline = buildTimeline(json, manualIdx, { manualAt });
+  } else {
+    const auto = progressFromAge(json.createdAt, json.delivery);
+    // Real courier orders only move past "Packed" once Delhivery reports progress.
+    timeline = buildTimeline(json, delhivery ? Math.min(auto, 1) : auto);
+  }
   const active = timeline.find((s) => s.active) || timeline[timeline.length - 1];
-  return {
-    ...json,
-    timeline,
-    status: active.id,
-    currentStatusLabel: active.label,
-    currentStatusDesc: active.desc,
+  return finish({ status: active.id, label: active.label, desc: active.desc, timeline });
+}
+
+const TRACKING_TTL_MS = 15 * 60 * 1000;
+
+/** Delivered COD shipments mean the cash was collected: mark paid and send the payment confirmation once. */
+async function settleCodOnDelivery(order) {
+  if (order.payment?.method !== "cod" || order.payment.status === "confirmed" || courierStage(order.courier) !== 5) return;
+  const res = await Order.updateOne(
+    { _id: order._id, "payment.status": { $ne: "confirmed" } },
+    { $set: { "payment.status": "confirmed", "payment.paidAt": order.courier.statusAt || new Date() } }
+  );
+  if (!res.modifiedCount) return;
+  const fresh = await Order.findById(order._id);
+  const user = fresh.user ? await User.findById(fresh.user) : null;
+  sendPaymentConfirmationEmail(fresh, user).catch((err) =>
+    console.error(`Payment confirmation for ${fresh.orderNumber} failed:`, err.message)
+  );
+}
+
+/** Pulls live Delhivery tracking for an order's AWB (cached for 15 minutes) and returns the up-to-date order. */
+export async function refreshTracking(order, { force = false } = {}) {
+  const awb = order.trackingNumber;
+  if (!awb || !isDelhiveryPartner(order.shippingPartner) || !isDelhiveryConfigured()) return order;
+  const prev = order.courier?.awb === awb ? order.courier : null;
+  const fresh = prev?.fetchedAt && Date.now() - new Date(prev.fetchedAt).getTime() < TRACKING_TTL_MS;
+  if (!force && prev && (fresh || (prev.status && isFinalCourierStatus(prev)))) return order;
+
+  try {
+    const latest = await trackShipment(awb);
+    const updated = await Order.findByIdAndUpdate(order._id, { $set: { courier: latest } }, { new: true });
+    await settleCodOnDelivery(updated);
+    return updated;
+  } catch (err) {
+    const update = prev
+      ? { "courier.fetchedAt": new Date(), "courier.error": err.message }
+      : { courier: { awb, fetchedAt: new Date(), error: err.message } };
+    const updated = await Order.findByIdAndUpdate(order._id, { $set: update }, { new: true });
+    if (force) throw err;
+    return updated;
+  }
+}
+
+/** Keeps open Delhivery shipments current so admin views and COD settlement don't wait for a customer visit. */
+export function startShipmentTracking() {
+  const run = async () => {
+    if (!isDelhiveryConfigured()) return;
+    try {
+      const open = await Order.find({
+        trackingNumber: { $nin: [null, ""] },
+        shippingPartner: /delhivery/i,
+        createdAt: { $gte: new Date(Date.now() - 45 * 864e5) },
+      });
+      for (const order of open) await refreshTracking(order);
+    } catch (err) {
+      console.error("Shipment tracking refresh failed:", err.message);
+    }
   };
+  setTimeout(run, 60 * 1000);
+  setInterval(run, 60 * 60 * 1000);
 }
 
 /** Unpaid online orders stay hidden from the customer's order list and tracking. */
@@ -220,7 +349,6 @@ router.post("/", optionalAuth, async (req, res) => {
     const shipping = delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
     const total = subtotal - couponDiscount + shipping;
     const orderNumber = "MZ-" + Date.now().toString().slice(-8);
-    const trackingNumber = "BD" + Date.now().toString().slice(-10);
     const estimated = new Date();
     estimated.setDate(estimated.getDate() + (delivery === "express" ? 1 : 4));
 
@@ -245,8 +373,7 @@ router.post("/", optionalAuth, async (req, res) => {
         total,
       },
       status: "confirmed",
-      trackingNumber,
-      shippingPartner: "BlueDart Express",
+      shippingPartner: "Delhivery",
       estimatedDelivery: estimated,
     });
 
@@ -288,7 +415,7 @@ router.get("/track", protect, async (req, res) => {
 
     const order = await Order.findOne({ orderNumber, user: req.user._id, ...VISIBLE_TO_CUSTOMER });
     if (!order) return res.status(404).json({ message: "No order with this ID on your account" });
-    res.json(serializeOrder(order));
+    res.json(serializeOrder(await refreshTracking(order)));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -297,7 +424,8 @@ router.get("/track", protect, async (req, res) => {
 router.get("/mine", protect, async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id, ...VISIBLE_TO_CUSTOMER }).sort({ createdAt: -1 });
-    res.json(orders.map(serializeOrder));
+    const current = await Promise.all(orders.map((o) => refreshTracking(o)));
+    res.json(current.map(serializeOrder));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -307,7 +435,7 @@ router.get("/:orderNumber", protect, async (req, res) => {
   try {
     const order = await Order.findOne({ orderNumber: req.params.orderNumber, user: req.user._id });
     if (!order) return res.status(404).json({ message: "Order not found" });
-    res.json(serializeOrder(order));
+    res.json(serializeOrder(await refreshTracking(order)));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

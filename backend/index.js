@@ -17,6 +17,8 @@ import cartRoutes from "./routes/cart.js";
 import adminRoutes from "./routes/admin.js";
 import paymentRoutes from "./routes/payments.js";
 import { isCashfreeConfigured, cashfreeMode } from "./cashfree.js";
+import { isDelhiveryConfigured, delhiveryMode } from "./delhivery.js";
+import { startShipmentTracking } from "./routes/orders.js";
 import { getAllowedOrigins, getAppUrl } from "./config.js";
 import { configureCloudinary } from "./cloudinary.js";
 import { verifyMailer } from "./mailer.js";
@@ -133,7 +135,13 @@ async function start() {
       ? `Cashfree configured (${cashfreeMode()})`
       : "Cashfree not configured — set CASHFREE_APP_ID, CASHFREE_SECRET_KEY, CASHFREE_ENV"
   );
+  console.log(
+    isDelhiveryConfigured()
+      ? `Delhivery configured (${delhiveryMode()})`
+      : "Delhivery not configured — set DELHIVERY_API_TOKEN and DELHIVERY_PICKUP_LOCATION"
+  );
   startCartReminders();
+  startShipmentTracking();
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`MIZAZY running on port ${PORT}`);
   });

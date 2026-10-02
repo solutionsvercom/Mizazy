@@ -64,7 +64,7 @@ export const INFO_TOPICS: Record<InfoTopic, { title: string; body: ReactNode }> 
         <List
           items={[
             "Orders placed before 5 PM are usually dispatched the same day.",
-            "We ship across India with BlueDart Express to 200+ cities.",
+            "We ship across India with Delhivery.",
             "Your tracking number is shared once the order is shipped, and live status is available in My Account → My Orders.",
           ]}
         />
@@ -106,7 +106,7 @@ export const INFO_TOPICS: Record<InfoTopic, { title: string; body: ReactNode }> 
         <H>Delivery</H>
         <List
           items={[
-            "We currently ship within India only, through BlueDart Express and other trusted courier partners.",
+            "We currently ship within India only, through Delhivery and other trusted courier partners.",
             "If a delivery attempt fails, the courier will try again. Orders that cannot be delivered are returned to us and refunded as per our Refund Policy.",
             "Please check the package at delivery. If it is damaged or tampered with, report it within 48 hours with photos.",
           ]}

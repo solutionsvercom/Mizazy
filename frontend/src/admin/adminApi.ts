@@ -64,6 +64,10 @@ export const adminApi = {
     request<Doc>(`/admin/${collection}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   sendPaymentEmail: (orderId: string) =>
     request<{ message: string }>(`/admin/orders/${orderId}/payment-email`, { method: "POST" }),
+  createDelhiveryShipment: (orderId: string) =>
+    request<{ message: string; order: Doc }>(`/admin/orders/${orderId}/delhivery/create`, { method: "POST" }),
+  refreshDelhiveryTracking: (orderId: string) =>
+    request<{ message: string; order: Doc }>(`/admin/orders/${orderId}/delhivery/refresh`, { method: "POST" }),
   remove: (collection: string, id: string) =>
     request<{ ok: boolean }>(`/admin/${collection}/${id}`, { method: "DELETE" }),
   uploadImages: async (files: FileList | File[], folder = "products") => {

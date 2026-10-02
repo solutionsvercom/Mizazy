@@ -209,7 +209,7 @@ export default function TrackingPage({ onNavigate, onAuthOpen, prefillOrder }: T
               <h3 className="font-display font-700 text-white text-base mb-5">Delivery Details</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[
-                  { label: "Tracking Number", value: order.trackingNumber },
+                  { label: "Tracking Number", value: order.trackingNumber || "Shared once shipped" },
                   { label: "Shipping Partner", value: order.shippingPartner },
                   { label: "Delivery Address", value: `${order.address.city}, ${order.address.pincode}` },
                   { label: "Payment", value: `${order.payment.status === "confirmed" ? "Paid" : "COD"} · ₹${order.totals.total.toLocaleString()}` },
@@ -220,7 +220,41 @@ export default function TrackingPage({ onNavigate, onAuthOpen, prefillOrder }: T
                   </div>
                 ))}
               </div>
+              {order.trackingUrl && (
+                <a
+                  href={order.trackingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-5 text-[#D4A520] text-sm font-display font-600 hover:underline"
+                >
+                  Track on Delhivery
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+                </a>
+              )}
             </div>
+
+            {order.courierUpdates && order.courierUpdates.length > 0 && (
+              <div className="bg-[#0e0e0e] rounded-2xl border border-white/07 p-6">
+                <h3 className="font-display font-700 text-white text-base mb-1">Shipment Updates</h3>
+                <p className="text-white/30 text-xs mb-5">Live from {order.shippingPartner}</p>
+                <div className="space-y-4">
+                  {order.courierUpdates.map((u, i) => (
+                    <div key={`${u.time}-${i}`} className="flex gap-3">
+                      <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${i === 0 ? "bg-[#D4A520]" : "bg-white/15"}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className={`font-display font-600 text-sm ${i === 0 ? "text-white" : "text-white/60"}`}>{u.status}</p>
+                          {u.time && <p className="text-white/25 text-xs flex-shrink-0">{u.time}</p>}
+                        </div>
+                        {(u.location || u.instructions) && (
+                          <p className="text-white/35 text-xs mt-0.5">{[u.location, u.instructions].filter(Boolean).join(" · ")}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-3">
               <button

@@ -187,6 +187,24 @@ function Editor({ config, doc, onCancel, onSaved, onDelete, onAuthError }: Edito
   const [mailing, setMailing] = useState(false);
   const [mailResult, setMailResult] = useState<{ text: string; ok: boolean } | null>(null);
 
+  const [shipping, setShipping] = useState("");
+  const [shipResult, setShipResult] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const delhivery = async (action: "create" | "refresh") => {
+    if (action === "create" && !window.confirm("Create a Delhivery shipment for this order? Delhivery will schedule a pickup.")) return;
+    setShipping(action);
+    setShipResult(null);
+    try {
+      const res = action === "create" ? await adminApi.createDelhiveryShipment(doc._id) : await adminApi.refreshDelhiveryTracking(doc._id);
+      setDraft((d) => ({ ...d, trackingNumber: res.order.trackingNumber, shippingPartner: res.order.shippingPartner, courier: res.order.courier }));
+      setShipResult({ text: res.message, ok: true });
+    } catch (err) {
+      if (!onAuthError(err)) setShipResult({ text: err instanceof Error ? err.message : "Delhivery request failed", ok: false });
+    } finally {
+      setShipping("");
+    }
+  };
+
   const sendPaymentEmail = async () => {
     setMailing(true);
     setMailResult(null);
@@ -401,6 +419,40 @@ function Editor({ config, doc, onCancel, onSaved, onDelete, onAuthError }: Edito
           </div>
         ))}
       </div>
+
+      {config.id === "orders" && !isNew && (
+        <div className="rounded-xl border border-white/8 bg-[#0b0b0b] p-5 mt-6">
+          <h2 className="text-[#D4A520] text-xs font-bold uppercase tracking-wider mb-2">Delhivery shipping</h2>
+          <p className="text-white/40 text-xs mb-3">
+            Create the shipment in Delhivery straight from this order (the AWB is saved automatically), or refresh the live tracking the customer sees.
+            Tracking also refreshes on its own every hour.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {!(draft.trackingNumber && /delhivery/i.test(String(draft.shippingPartner || ""))) && (
+              <button
+                onClick={() => delhivery("create")}
+                disabled={Boolean(shipping)}
+                className="px-4 py-2 rounded-lg bg-[#D4A520] text-black text-sm font-bold hover:bg-[#e6b830] disabled:opacity-50"
+              >
+                {shipping === "create" ? "Creating…" : "Create Delhivery shipment"}
+              </button>
+            )}
+            <button
+              onClick={() => delhivery("refresh")}
+              disabled={Boolean(shipping)}
+              className="px-4 py-2 rounded-lg border border-[#D4A520]/40 text-[#D4A520] text-sm font-semibold hover:bg-[#D4A520]/10 disabled:opacity-50"
+            >
+              {shipping === "refresh" ? "Refreshing…" : "Refresh tracking"}
+            </button>
+            {typeof doc.trackingUrl === "string" && (
+              <a href={doc.trackingUrl} target="_blank" rel="noreferrer" className="px-4 py-2 rounded-lg border border-white/12 text-white/70 text-sm hover:text-white">
+                Open on Delhivery ↗
+              </a>
+            )}
+          </div>
+          {shipResult && <p className={`text-sm mt-3 ${shipResult.ok ? "text-green-400" : "text-red-400"}`}>{shipResult.text}</p>}
+        </div>
+      )}
 
       {config.id === "orders" && !isNew && (
         <div className="rounded-xl border border-white/8 bg-[#0b0b0b] p-5 mt-6">

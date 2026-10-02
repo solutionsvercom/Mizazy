@@ -100,7 +100,7 @@ export default function ConfirmationPage({
         </div>
 
         <p className="text-center text-white/25 text-xs mt-6">
-          A confirmation email has been sent to your registered address. For support, contact MIZAZY at support@mizazy.com
+          A confirmation email has been sent to your registered address. For support, contact MIZAZY at contact@mizazy.com
         </p>
       </div>
     </div>

@@ -7,6 +7,8 @@ import { whyMizazy, Product, CartItem } from "../data";
 import { useStore } from "../store";
 import { api } from "../api";
 import ProductCard from "../components/ProductCard";
+import InfoModal from "../components/InfoModal";
+import { FOOTER_TOPICS, type InfoTopic } from "../helpContent";
 
 interface HomePageProps {
   onViewProduct: (product: Product) => void;
@@ -1008,8 +1010,10 @@ function Newsletter() {
 function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
   const { user } = useStore();
   const accountLinks = ["My Account", "My Orders", ...(user ? ["Track Order"] : []), "Wishlist", "Reviews"];
+  const [infoTopic, setInfoTopic] = useState<InfoTopic | null>(null);
   return (
     <footer className="bg-[#080808] border-t border-white/055 pt-16 pb-32 md:pb-12">
+      <InfoModal topic={infoTopic} onClose={() => setInfoTopic(null)} />
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-10 mb-14">
           {/* Brand */}
@@ -1055,7 +1059,9 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
                           document.getElementById(SHOP_SECTIONS[l])?.scrollIntoView({ behavior: "smooth", block: "start" });
                           return;
                         }
-                        if (l === "Track Order") onNavigate("track");
+                        if (FOOTER_TOPICS[l]) setInfoTopic(FOOTER_TOPICS[l]);
+                        else if (l === "FAQs") onNavigate("faqs");
+                        else if (l === "Track Order") onNavigate("track");
                         else if (l === "My Account" || l === "My Orders" || l === "Wishlist") onNavigate("account");
                         else onNavigate("home");
                       }}

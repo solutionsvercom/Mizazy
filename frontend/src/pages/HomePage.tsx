@@ -1050,9 +1050,15 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
                 {col.links.map((l) => (
                   <li key={l}>
                     <button
-                      onClick={() =>
-                        l === "Track Order" ? onNavigate("track") : l === "My Account" || l === "My Orders" || l === "Wishlist" ? onNavigate("account") : onNavigate("home")
-                      }
+                      onClick={() => {
+                        if (SHOP_SECTIONS[l]) {
+                          document.getElementById(SHOP_SECTIONS[l])?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          return;
+                        }
+                        if (l === "Track Order") onNavigate("track");
+                        else if (l === "My Account" || l === "My Orders" || l === "Wishlist") onNavigate("account");
+                        else onNavigate("home");
+                      }}
                       className="text-white/30 hover:text-white/65 text-sm transition-colors text-left font-body"
                     >
                       {l}
@@ -1080,6 +1086,14 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
     </footer>
   );
 }
+
+const SHOP_SECTIONS: Record<string, string> = {
+  "All Products": "all-products",
+  "New Arrivals": "new-arrivals",
+  "Best Sellers": "best-sellers",
+  Offers: "offers",
+  Bundles: "offers",
+};
 
 /* ═══════════════════════════════════════════════════════════
    MAIN EXPORT

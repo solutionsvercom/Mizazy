@@ -46,7 +46,18 @@ const orderSchema = new mongoose.Schema(
       method: { type: String, enum: ["upi", "card", "cod", "netbanking"], default: "upi" },
       status: { type: String, enum: ["pending", "confirmed", "failed"], default: "confirmed" },
       upiId: String,
+      gateway: String,
+      cfOrderId: String,
+      cfPaymentId: String,
+      paymentGroup: String,
+      paidAt: Date,
+      // Lets a guest who started an online payment check its result without an account.
+      accessToken: { type: String, select: false },
     },
+    // True once stock, cart, coupon and emails have been processed (immediately for COD, after payment for online).
+    finalized: { type: Boolean, default: false },
+    // ₹1 Cashfree test payment placed by an admin; excluded from revenue.
+    isTest: { type: Boolean, default: false },
     coupon: String,
     totals: {
       subtotal: Number,

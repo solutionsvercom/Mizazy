@@ -2,9 +2,10 @@ import nodemailer from "nodemailer";
 import { getPublicSiteUrl } from "./config.js";
 
 /**
- * Two sender mailboxes:
+ * Sender mailboxes:
  *  - "orders":   order confirmations + new-order alerts (e.g. orders@mizazy.com)
  *  - "customer": account emails like password reset and welcome (e.g. customer@mizazy.com)
+ *  - "payment":  online payment receipts (e.g. payment@mizazy.com)
  * Each mailbox authenticates with its own credentials so the From address matches the login.
  */
 const MAILBOXES = {
@@ -19,6 +20,12 @@ const MAILBOXES = {
     pass: () => process.env.CUSTOMER_SMTP_PASS,
     from: () => process.env.CUSTOMER_MAIL_FROM,
     label: "MIZAZY Customer Care",
+  },
+  payment: {
+    user: () => process.env.PAYMENT_SMTP_USER,
+    pass: () => process.env.PAYMENT_SMTP_PASS,
+    from: () => process.env.PAYMENT_MAIL_FROM,
+    label: "MIZAZY Payments",
   },
 };
 
@@ -64,7 +71,20 @@ const escapeHtml = (value) =>
 
 const rupees = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
-const PAYMENT_LABELS = { upi: "UPI", card: "Card", cod: "Cash on Delivery", netbanking: "Net Banking" };
+const PAYMENT_LABELS = {
+  upi: "UPI",
+  card: "Card",
+  cod: "Cash on Delivery",
+  netbanking: "Net Banking",
+  credit_card: "Credit Card",
+  debit_card: "Debit Card",
+  net_banking: "Net Banking",
+  wallet: "Wallet",
+  pay_later: "Pay Later",
+  cardless_emi: "Cardless EMI",
+  credit_card_emi: "Credit Card EMI",
+  debit_card_emi: "Debit Card EMI",
+};
 
 function button(href, text) {
   return `<p style="margin:24px 0 0;"><a href="${escapeHtml(href)}" style="background:#D4A520;color:#050505;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;">${escapeHtml(text)}</a></p>`;
@@ -117,7 +137,7 @@ function orderDetailsHtml(order) {
       ${escapeHtml(a.address)}, ${escapeHtml(a.city)}, ${escapeHtml(a.state)} - ${escapeHtml(a.pincode)}
     </p>
     <p style="font-size:14px;color:#555;margin:14px 0 0;">
-      Payment: ${escapeHtml(PAYMENT_LABELS[order.payment?.method] || order.payment?.method)}
+      Payment: ${escapeHtml(PAYMENT_LABELS[order.payment?.paymentGroup] || PAYMENT_LABELS[order.payment?.method] || order.payment?.method)}${order.payment?.gateway && order.payment?.status === "confirmed" ? " · Paid online" : ""}
       ${delivery ? `<br/>Expected delivery: ${delivery} (${escapeHtml(order.shippingPartner)})` : ""}
     </p>`;
 }
@@ -174,6 +194,42 @@ export async function sendOrderEmails(order, user) {
   );
 
   logFailures(`Order ${order.orderNumber}`, await Promise.allSettled(jobs));
+}
+
+/** Online payment receipt to the customer, sent from the payment mailbox. Never throws. */
+export async function sendPaymentReceiptEmail(order, user) {
+  const box = mailbox("payment");
+  const to = order.email || user?.email;
+  if (!box || !to) return;
+  const p = order.payment || {};
+  const first = escapeHtml((user?.name || order.address.name || "").split(" ")[0]);
+  const paidAt = new Date(p.paidAt || Date.now()).toLocaleString("en-IN", {
+    day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata",
+  });
+  const row = (label, value) =>
+    `<tr><td style="padding:6px 0;color:#777;">${label}</td><td style="padding:6px 0;text-align:right;color:#222;">${value}</td></tr>`;
+
+  logFailures(`Payment receipt ${order.orderNumber}`, await Promise.allSettled([
+    box.transport.sendMail({
+      from: box.from,
+      to,
+      replyTo: process.env.ADMIN_EMAIL || undefined,
+      subject: `Payment received · ${rupees(order.totals.total)} for MIZAZY order ${order.orderNumber}`,
+      html: layout(
+        `Payment received${first ? `, ${first}` : ""}`,
+        `<p style="font-size:14px;color:#555;margin:0 0 18px;">We've received your payment. This email is your receipt.</p>
+         <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #eee;border-bottom:1px solid #eee;">
+           ${row("Amount paid", `<strong>${rupees(order.totals.total)}</strong>`)}
+           ${row("Order ID", escapeHtml(order.orderNumber))}
+           ${p.cfPaymentId ? row("Transaction ID", escapeHtml(p.cfPaymentId)) : ""}
+           ${row("Payment method", escapeHtml(PAYMENT_LABELS[p.paymentGroup] || PAYMENT_LABELS[p.method] || p.method))}
+           ${row("Paid on", escapeHtml(paidAt))}
+         </table>
+         <p style="font-size:12px;color:#999;margin:18px 0 0;">Payments are processed securely by Cashfree Payments. Keep this email for your records.</p>
+         ${button(`${getPublicSiteUrl()}/track`, "Track your order")}`
+      ),
+    }),
+  ]));
 }
 
 /** Password reset link, sent from the customer mailbox. Throws if the mailbox is not configured or sending fails. */

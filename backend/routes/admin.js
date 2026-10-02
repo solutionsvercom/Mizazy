@@ -33,7 +33,7 @@ const COLLECTIONS = {
     search: ["orderNumber", "phone", "email", "address.name", "address.city", "trackingNumber"],
     sort: { createdAt: -1 },
     noCreate: true,
-    readOnly: ["orderNumber", "user", "statusSetByAdmin", "statusUpdatedAt", "timeline"],
+    readOnly: ["orderNumber", "user", "statusSetByAdmin", "statusUpdatedAt", "timeline", "finalized"],
   },
   users: {
     model: User,
@@ -118,7 +118,7 @@ router.get("/stats", async (_req, res) => {
         Review.countDocuments(),
         Order.countDocuments({ createdAt: { $gte: startOfDay } }),
         Order.aggregate([
-          { $match: { status: { $ne: "cancelled" } } },
+          { $match: { isTest: { $ne: true }, status: { $ne: "cancelled" }, "payment.status": { $ne: "failed" }, $nor: [{ "payment.gateway": "cashfree", "payment.status": { $ne: "confirmed" } }] } },
           { $group: { _id: null, total: { $sum: "$totals.total" } } },
         ]),
         Cart.countDocuments({ "items.0": { $exists: true } }),

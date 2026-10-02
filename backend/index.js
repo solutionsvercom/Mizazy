@@ -15,6 +15,8 @@ import catalogRoutes from "./routes/catalog.js";
 import uploadRoutes from "./routes/upload.js";
 import cartRoutes from "./routes/cart.js";
 import adminRoutes from "./routes/admin.js";
+import paymentRoutes from "./routes/payments.js";
+import { isCashfreeConfigured, cashfreeMode } from "./cashfree.js";
 import { getAllowedOrigins, getAppUrl } from "./config.js";
 import { configureCloudinary } from "./cloudinary.js";
 import { verifyMailer } from "./mailer.js";
@@ -43,7 +45,14 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(
+  express.json({
+    verify(req, _res, buf) {
+      // Cashfree webhook signatures are computed over the exact raw body.
+      if (req.originalUrl.startsWith("/api/payments/cashfree/webhook")) req.rawBody = buf;
+    },
+  })
+);
 
 app.get("/api/health", (_req, res) => {
   res.json({
@@ -60,6 +69,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api", catalogRoutes);
 
 app.use("/api", (_req, res) => {
@@ -116,7 +126,13 @@ async function start() {
   verifyMailer().then((status) => {
     console.log(`Mail (orders): ${status.orders}`);
     console.log(`Mail (customer): ${status.customer}`);
+    console.log(`Mail (payment): ${status.payment}`);
   });
+  console.log(
+    isCashfreeConfigured()
+      ? `Cashfree configured (${cashfreeMode()})`
+      : "Cashfree not configured — set CASHFREE_APP_ID, CASHFREE_SECRET_KEY, CASHFREE_ENV"
+  );
   startCartReminders();
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`MIZAZY running on port ${PORT}`);

@@ -62,7 +62,11 @@ Environment variables in Hostinger (do **not** upload `.env`):
 - `ORDERS_MAIL_FROM` — optional, e.g. `MIZAZY Orders <orders@mizazy.com>`
 - `CUSTOMER_SMTP_USER` / `CUSTOMER_SMTP_PASS` — customer mailbox (`customer@mizazy.com`) for forgot-password and welcome emails
 - `CUSTOMER_MAIL_FROM` — optional, e.g. `MIZAZY Customer Care <customer@mizazy.com>`
+- `PAYMENT_SMTP_USER` / `PAYMENT_SMTP_PASS` — payment mailbox (`payment@mizazy.com`) for online payment receipts
+- `PAYMENT_MAIL_FROM` — optional, e.g. `MIZAZY Payments <payment@mizazy.com>`
 - `ADMIN_EMAIL` — MIZAZY inbox that receives every new order (defaults to the orders mailbox)
+- `CASHFREE_APP_ID` / `CASHFREE_SECRET_KEY` — Cashfree Payments API keys (Dashboard → Developers → API Keys)
+- `CASHFREE_ENV` — `sandbox` for test keys, `production` for live keys
 - `PORT` — set automatically by Hostinger (do not hardcode)
 
 Site URLs used by the app:
@@ -71,6 +75,15 @@ Site URLs used by the app:
 - Local: `http://localhost:5173` (frontend) and `http://localhost:5000` (API)
 
 What the build does: installs frontend deps, builds React into `backend/public`, then Express serves API + static site together.
+
+## Payments (Cashfree)
+
+- UPI / Card / Net Banking go through Cashfree checkout; Cash on Delivery skips it. Without Cashfree keys, checkout offers COD only.
+- Online orders are created with payment `pending`; stock, cart, coupon and emails are processed only after Cashfree reports the order `PAID` (checked server-side via `/api/payments/cashfree/verify` and the webhook).
+- Webhook URL to add in the Cashfree dashboard: `https://mizazy.com/api/payments/cashfree/webhook`.
+- Payment receipts are sent from the payment mailbox.
+- Live (`production`) keys need the site domain whitelisted in Cashfree (Developers → Whitelisting), and only accept https return URLs.
+- `/payment-test` (admin session required) runs the real checkout with a ₹1 "Cashfree Test Payment" item, free shipping, no coupon/COD; those orders have `isTest: true` and are excluded from revenue.
 
 ## Admin panel
 

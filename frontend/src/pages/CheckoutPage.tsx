@@ -3,6 +3,8 @@ import { CartItem } from "../data";
 import { MIZAZY_LOGO_URL } from "../brand";
 import { api, PlacedOrder } from "../api";
 import { useStore } from "../store";
+import { clearPendingPayment, openCashfreeCheckout, savePendingPayment } from "../cashfree";
+import { getAdminSessionToken, isTestPaymentCart } from "../testPayment";
 
 interface CheckoutPageProps {
   cart: CartItem[];
@@ -70,7 +72,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
   });
   const [delivery, setDelivery] = useState<"standard" | "express">("standard");
   const [payment, setPayment] = useState<"upi" | "card" | "cod" | "netbanking">("upi");
-  const [upiId, setUpiId] = useState("");
+  const [onlinePay, setOnlinePay] = useState<{ enabled: boolean; mode: "sandbox" | "production" } | null>(null);
   const [coupon, setCoupon] = useState(
     () => (new URLSearchParams(window.location.search).get("coupon") || "").trim().toUpperCase()
   );
@@ -79,13 +81,26 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
   const [couponPercent, setCouponPercent] = useState(10);
   const [couponError, setCouponError] = useState("");
   const [placing, setPlacing] = useState(false);
+  const [placingLabel, setPlacingLabel] = useState("Placing Order...");
   const [error, setError] = useState("");
+  const isOnline = payment !== "cod";
+
+  useEffect(() => {
+    api
+      .paymentConfig()
+      .then((c) => {
+        setOnlinePay({ enabled: c.cashfree, mode: c.mode });
+        if (!c.cashfree) setPayment("cod");
+      })
+      .catch(() => setOnlinePay({ enabled: false, mode: "sandbox" }));
+  }, []);
 
   const subtotal = cart.reduce((s, i) => s + i.product.price * i.quantity, 0);
   const mrpTotal = cart.reduce((s, i) => s + i.product.mrp * i.quantity, 0);
   const savings = mrpTotal - subtotal;
   const couponDiscount = couponApplied ? Math.round(subtotal * (couponPercent / 100)) : 0;
-  const shipping = delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
+  const isTestPayment = isTestPaymentCart(cart);
+  const shipping = isTestPayment ? 0 : delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
   const total = subtotal - couponDiscount + shipping;
 
   const applyCoupon = async (code = coupon) => {
@@ -109,6 +124,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
 
   const placeOrder = async () => {
     setPlacing(true);
+    setPlacingLabel(isOnline ? "Opening payment..." : "Placing Order...");
     setError("");
     try {
       const order = await api.placeOrder({
@@ -120,10 +136,29 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
         })),
         address,
         delivery,
-        payment: { method: payment, upiId: payment === "upi" ? upiId : undefined },
+        payment: { method: payment },
         coupon: couponApplied ? coupon : undefined,
-      });
-      onOrderPlaced(order);
+      }, isTestPayment ? getAdminSessionToken() : undefined);
+      if (!order.cashfree) {
+        onOrderPlaced(order);
+        return;
+      }
+
+      const pending = { orderNumber: order.orderNumber, token: order.cashfree.token };
+      savePendingPayment(pending);
+      setPlacingLabel("Waiting for payment...");
+      await openCashfreeCheckout(order.cashfree.paymentSessionId, onlinePay?.mode || "sandbox");
+      setPlacingLabel("Confirming payment...");
+      const result = await api.verifyPayment(pending.orderNumber, pending.token);
+      if (result.paymentStatus === "confirmed") {
+        clearPendingPayment();
+        onOrderPlaced(result.order);
+        return;
+      }
+      setError(
+        "Payment was not completed. You can try again or choose Cash on Delivery. If money was debited, your order will be confirmed automatically once the bank confirms it."
+      );
+      setPlacing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not place order");
       setPlacing(false);
@@ -132,7 +167,8 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
 
   const canProceed = () => {
     if (step === 1) return address.name && address.phone && address.address && address.city && address.state && address.pincode;
-    if (step === 3 && payment === "upi") return upiId.includes("@");
+    if (step === 3 && isOnline) return Boolean(onlinePay?.enabled);
+    if (step === 3 && isTestPayment) return false;
     return true;
   };
 
@@ -317,59 +353,32 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
                   ))}
                 </div>
 
-                {payment === "upi" && (
-                  <div>
-                    <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">UPI ID</label>
-                    <input
-                      className="input-dark"
-                      placeholder="yourname@upi"
-                      value={upiId}
-                      onChange={(e) => setUpiId(e.target.value)}
-                    />
-                    <p className="text-white/25 text-xs mt-2">Examples: name@okicici, name@ybl, name@paytm</p>
-                    <div className="flex gap-3 mt-4">
-                      {["G Pay", "PhonePe", "Paytm", "BHIM"].map((w) => (
-                        <button key={w} className="px-3 py-1.5 rounded-lg border border-white/10 text-white/50 text-xs font-display font-600 hover:border-white/25 hover:text-white/75 transition-all">
-                          {w}
-                        </button>
-                      ))}
-                    </div>
+                {isOnline && onlinePay?.enabled && (
+                  <div className="p-4 rounded-xl bg-[#D4A520]/10 border border-[#D4A520]/25">
+                    <p className="text-[#D4A520] font-display font-600 text-sm flex items-center gap-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      Pay securely via Cashfree
+                    </p>
+                    <p className="text-white/45 text-xs mt-1.5">
+                      {payment === "upi"
+                        ? "Pay with any UPI app — G Pay, PhonePe, Paytm, BHIM — or scan a QR code."
+                        : payment === "card"
+                          ? "All Visa, Mastercard, RuPay and Amex credit & debit cards are accepted."
+                          : "Pay from SBI, HDFC, ICICI, Axis, Kotak and 50+ other banks."}{" "}
+                      You'll enter your details on Cashfree's secure payment page after you place the order.
+                    </p>
                   </div>
                 )}
 
-                {payment === "card" && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">Card Number</label>
-                      <input className="input-dark" placeholder="1234 5678 9012 3456" maxLength={19} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">Expiry</label>
-                        <input className="input-dark" placeholder="MM / YY" />
-                      </div>
-                      <div>
-                        <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">CVV</label>
-                        <input className="input-dark" placeholder="•••" maxLength={4} type="password" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">Name on Card</label>
-                      <input className="input-dark" placeholder="As printed on card" />
-                    </div>
+                {isOnline && onlinePay && !onlinePay.enabled && (
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <p className="text-white/70 font-display font-600 text-sm">Online payment is coming soon.</p>
+                    <p className="text-white/40 text-xs mt-1">Please choose Cash on Delivery to place your order.</p>
                   </div>
                 )}
 
-                {payment === "netbanking" && (
-                  <div>
-                    <label className="block text-white/40 text-xs font-display font-600 mb-1.5 tracking-wide uppercase">Select Bank</label>
-                    <select className="input-dark">
-                      <option>Select your bank</option>
-                      {["SBI", "HDFC", "ICICI", "Axis", "Kotak", "PNB", "Bank of Baroda", "Other"].map((b) => (
-                        <option key={b}>{b}</option>
-                      ))}
-                    </select>
-                  </div>
+                {payment === "cod" && isTestPayment && (
+                  <p className="text-[#D4A520] text-xs mb-3">The ₹1 test payment needs UPI, Card or Net Banking.</p>
                 )}
 
                 {payment === "cod" && (
@@ -402,7 +411,8 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
                     <button onClick={() => setStep(3)} className="text-[#D4A520] text-xs font-600 hover:underline">Edit</button>
                   </div>
                   <p className="font-display font-600 text-white text-sm capitalize">
-                    {payment === "upi" ? `UPI: ${upiId || "Not entered"}` : payment === "card" ? "Credit / Debit Card" : payment === "cod" ? "Cash on Delivery" : "Net Banking"}
+                    {payment === "upi" ? "UPI" : payment === "card" ? "Credit / Debit Card" : payment === "cod" ? "Cash on Delivery" : "Net Banking"}
+                    {isOnline && <span className="text-white/35 normal-case"> · via Cashfree</span>}
                   </p>
                 </div>
 
@@ -455,9 +465,9 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
                       <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/>
                       </svg>
-                      Placing Order...
+                      {placingLabel}
                     </span>
-                  ) : "Place Order →"}
+                  ) : isOnline ? `Pay ₹${total.toLocaleString()} →` : "Place Order →"}
                 </button>
               )}
             </div>
@@ -490,7 +500,7 @@ export default function CheckoutPage({ cart, onOrderPlaced, onNavigate }: Checko
               <hr className="border-white/06 mb-4" />
 
               {/* Coupon */}
-              <div className="flex gap-2 mb-5">
+              <div className={`flex gap-2 mb-5 ${isTestPayment ? "hidden" : ""}`}>
                 <input
                   className="input-dark flex-1 text-sm py-2"
                   placeholder="Coupon code"

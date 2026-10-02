@@ -7,6 +7,21 @@ export function signAdminToken(adminId) {
   return jwt.sign({ aid: String(adminId), role: "admin" }, secret(), { expiresIn: "12h" });
 }
 
+/** Returns the admin for a valid, current admin token, otherwise null. */
+export async function adminFromToken(token) {
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, secret());
+    if (decoded.role !== "admin" || !decoded.aid) return null;
+    const admin = await Admin.findById(decoded.aid);
+    if (!admin) return null;
+    if (admin.passwordChangedAt && decoded.iat * 1000 < admin.passwordChangedAt.getTime() - 1000) return null;
+    return admin;
+  } catch {
+    return null;
+  }
+}
+
 export async function requireAdmin(req, res, next) {
   try {
     const header = req.headers.authorization || "";

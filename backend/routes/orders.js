@@ -1,10 +1,15 @@
+import crypto from "crypto";
 import { Router } from "express";
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import Coupon from "../models/Coupon.js";
 import Cart from "../models/Cart.js";
+import User from "../models/User.js";
 import { optionalAuth, protect } from "../middleware/auth.js";
-import { sendOrderEmails } from "../mailer.js";
+import { adminFromToken } from "../middleware/adminAuth.js";
+import { sendOrderEmails, sendPaymentReceiptEmail } from "../mailer.js";
+import { getAllowedOrigins, getPublicSiteUrl } from "../config.js";
+import { cashfreeMode, createCashfreeOrder, fetchCashfreePayment, isCashfreeConfigured } from "../cashfree.js";
 
 const router = Router();
 
@@ -58,7 +63,8 @@ function buildTimeline(createdAt, delivery, trackingNumber, city, manual) {
 }
 
 export function serializeOrder(order) {
-  const json = order.toJSON ? order.toJSON() : order;
+  const json = order.toJSON ? order.toJSON() : { ...order };
+  if (json.payment) json.payment = { ...json.payment, accessToken: undefined };
   const manualIdx = json.statusSetByAdmin ? STAGES.findIndex((s) => s.id === json.status) : -1;
   const manualAt = json.statusUpdatedAt ? new Date(json.statusUpdatedAt) : null;
 
@@ -93,6 +99,75 @@ export function serializeOrder(order) {
   };
 }
 
+/** ₹1 order admins can place to check the live Cashfree setup; never shown in the shop. */
+const TEST_PAYMENT = { productId: "mizazy-payment-test", name: "Cashfree Test Payment", price: 1 };
+
+/** Unpaid online orders stay hidden from the customer's order list and tracking. */
+const VISIBLE_TO_CUSTOMER = { $nor: [{ "payment.gateway": "cashfree", "payment.status": { $ne: "confirmed" } }] };
+
+/** Reduces stock, clears the saved cart, uses up a personal coupon and sends emails — exactly once per order. */
+async function finalizeOrder(orderId) {
+  const order = await Order.findOneAndUpdate(
+    { _id: orderId, finalized: { $ne: true } },
+    { $set: { finalized: true } },
+    { new: true }
+  );
+  if (!order) return null;
+
+  await Promise.all(
+    order.items.map((i) =>
+      Product.updateOne({ id: i.productId }, [
+        { $set: { stock: { $max: [0, { $subtract: ["$stock", i.quantity] }] } } },
+      ])
+    )
+  );
+  const user = order.user ? await User.findById(order.user) : null;
+  if (user) {
+    await Cart.updateOne({ user: user._id }, { $set: { items: [], remindersSent: 0, lastReminderAt: null } });
+    // Personal abandoned-cart codes are single use; a new abandonment re-activates it.
+    if (order.coupon) await Coupon.updateOne({ code: order.coupon, user: user._id }, { $set: { active: false } });
+  }
+
+  sendOrderEmails(order, user);
+  if (order.payment?.gateway === "cashfree") sendPaymentReceiptEmail(order, user);
+  return order;
+}
+
+/** Asks Cashfree for the latest payment result and confirms + finalizes the order when it is paid. */
+export async function syncCashfreePayment(order) {
+  if (order.payment?.gateway !== "cashfree" || order.payment.status === "confirmed") return order;
+  const result = await fetchCashfreePayment(order.orderNumber);
+
+  if (result.paid) {
+    if (Math.abs(result.amount - order.totals.total) > 0.01) {
+      console.error(`Cashfree amount mismatch for ${order.orderNumber}: paid ${result.amount}, expected ${order.totals.total}`);
+      return order;
+    }
+    const p = result.payment || {};
+    await Order.updateOne(
+      { _id: order._id, "payment.status": { $ne: "confirmed" } },
+      {
+        $set: {
+          "payment.status": "confirmed",
+          "payment.cfPaymentId": p.cf_payment_id ? String(p.cf_payment_id) : undefined,
+          "payment.paymentGroup": p.payment_group,
+          "payment.paidAt": p.payment_completion_time ? new Date(p.payment_completion_time) : new Date(),
+        },
+      }
+    );
+    await finalizeOrder(order._id);
+  } else if (["EXPIRED", "TERMINATED"].includes(result.orderStatus)) {
+    await Order.updateOne({ _id: order._id, "payment.status": "pending" }, { $set: { "payment.status": "failed" } });
+  }
+  return Order.findById(order._id);
+}
+
+function siteBase(req) {
+  const origin = req.get("origin");
+  if (origin && getAllowedOrigins().includes(origin)) return origin.replace(/\/+$/, "");
+  return getPublicSiteUrl();
+}
+
 router.post("/", optionalAuth, async (req, res) => {
   try {
     const { items, address, delivery = "standard", payment, coupon } = req.body;
@@ -102,16 +177,34 @@ router.post("/", optionalAuth, async (req, res) => {
     if (!address?.name || !address?.phone || !address?.address || !address?.city || !address?.state || !address?.pincode) {
       return res.status(400).json({ message: "Complete delivery address is required" });
     }
+    const method = ["upi", "card", "netbanking", "cod"].includes(payment?.method) ? payment.method : "upi";
+    const online = method !== "cod";
+    if (online && !isCashfreeConfigured()) {
+      return res.status(503).json({ message: "Online payment is not available right now. Please choose Cash on Delivery." });
+    }
+
+    const isTest = items.some((i) => i.productId === TEST_PAYMENT.productId);
+    if (isTest) {
+      if (items.length !== 1 || !(await adminFromToken(req.get("x-admin-token")))) {
+        return res.status(403).json({ message: "The test payment is only available to signed-in MIZAZY admins." });
+      }
+      if (!online) return res.status(400).json({ message: "The test payment must use UPI, Card or Net Banking." });
+    }
 
     const productIds = items.map((i) => i.productId);
-    const dbProducts = await Product.find({ id: { $in: productIds } });
+    const dbProducts = isTest ? [] : await Product.find({ id: { $in: productIds } });
     const byId = Object.fromEntries(dbProducts.map((p) => [p.id, p]));
 
     const orderItems = [];
     let subtotal = 0;
     let mrpTotal = 0;
 
-    for (const item of items) {
+    if (isTest) {
+      orderItems.push({ ...TEST_PAYMENT, image: "", color: "", colorName: "Test", quantity: 1, mrp: TEST_PAYMENT.price });
+      subtotal = mrpTotal = TEST_PAYMENT.price;
+    }
+
+    for (const item of isTest ? [] : items) {
       const product = byId[item.productId];
       if (!product) return res.status(400).json({ message: `Product ${item.productId} not found` });
       const qty = Math.max(1, Math.min(10, Number(item.quantity) || 1));
@@ -130,12 +223,11 @@ router.post("/", optionalAuth, async (req, res) => {
       });
       subtotal += product.price * qty;
       mrpTotal += product.mrp * qty;
-      product.stock -= qty;
     }
 
     let couponDiscount = 0;
     let couponCode;
-    if (coupon) {
+    if (coupon && !isTest) {
       const found = await Coupon.findOne({ code: String(coupon).toUpperCase().trim(), active: true });
       if (found && (!found.user || (req.user && found.user.equals(req.user._id)))) {
         couponDiscount = Math.round(subtotal * (found.discountPercent / 100));
@@ -143,7 +235,7 @@ router.post("/", optionalAuth, async (req, res) => {
       }
     }
 
-    const shipping = delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
+    const shipping = isTest ? 0 : delivery === "express" ? 149 : subtotal >= 999 ? 0 : 99;
     const total = subtotal - couponDiscount + shipping;
     const orderNumber = "MZ-" + Date.now().toString().slice(-8);
     const trackingNumber = "BD" + Date.now().toString().slice(-10);
@@ -158,10 +250,11 @@ router.post("/", optionalAuth, async (req, res) => {
       address,
       items: orderItems,
       delivery,
+      ...(isTest ? { isTest: true } : {}),
       payment: {
-        method: payment?.method || "upi",
-        status: payment?.method === "cod" ? "pending" : "confirmed",
-        upiId: payment?.upiId,
+        method,
+        status: "pending",
+        ...(online ? { gateway: "cashfree", accessToken: crypto.randomBytes(24).toString("hex") } : {}),
       },
       coupon: couponCode,
       totals: {
@@ -177,18 +270,32 @@ router.post("/", optionalAuth, async (req, res) => {
       estimatedDelivery: estimated,
     });
 
-    await Promise.all(dbProducts.map((p) => p.save()));
-    if (req.user) {
-      await Cart.updateOne(
-        { user: req.user._id },
-        { $set: { items: [], remindersSent: 0, lastReminderAt: null } }
-      );
-      // Personal abandoned-cart codes are single use; a new abandonment re-activates it.
-      if (couponCode) await Coupon.updateOne({ code: couponCode, user: req.user._id }, { $set: { active: false } });
+    if (!online) {
+      await finalizeOrder(order._id);
+      return res.status(201).json(serializeOrder(order));
     }
 
-    res.status(201).json(serializeOrder(order));
-    sendOrderEmails(order, req.user);
+    const token = order.payment.accessToken;
+    let base = siteBase(req);
+    // Cashfree production only accepts https return URLs.
+    if (cashfreeMode() === "production" && !base.startsWith("https://")) base = getPublicSiteUrl();
+    try {
+      const session = await createCashfreeOrder({
+        order,
+        customerId: req.user ? String(req.user._id) : `guest_${String(address.phone).replace(/\D/g, "")}`,
+        returnUrl: `${base}/payment-status?order=${encodeURIComponent(orderNumber)}&t=${token}`,
+        notifyUrl: process.env.NODE_ENV === "production" ? `${getPublicSiteUrl()}/api/payments/cashfree/webhook` : undefined,
+      });
+      await Order.updateOne({ _id: order._id }, { $set: { "payment.cfOrderId": String(session.cfOrderId) } });
+      res.status(201).json({
+        ...serializeOrder(order),
+        cashfree: { paymentSessionId: session.paymentSessionId, token },
+      });
+    } catch (err) {
+      await Order.updateOne({ _id: order._id }, { $set: { "payment.status": "failed" } });
+      console.error(`Cashfree order ${orderNumber} failed:`, err.message);
+      res.status(502).json({ message: "Could not start the payment. Please try again or choose Cash on Delivery." });
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -199,7 +306,7 @@ router.get("/track", protect, async (req, res) => {
     const orderNumber = String(req.query.orderNumber || "").trim().toUpperCase();
     if (!orderNumber) return res.status(400).json({ message: "Order ID is required" });
 
-    const order = await Order.findOne({ orderNumber, user: req.user._id });
+    const order = await Order.findOne({ orderNumber, user: req.user._id, ...VISIBLE_TO_CUSTOMER });
     if (!order) return res.status(404).json({ message: "No order with this ID on your account" });
     res.json(serializeOrder(order));
   } catch (err) {
@@ -209,7 +316,7 @@ router.get("/track", protect, async (req, res) => {
 
 router.get("/mine", protect, async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.user._id, ...VISIBLE_TO_CUSTOMER }).sort({ createdAt: -1 });
     res.json(orders.map(serializeOrder));
   } catch (err) {
     res.status(500).json({ message: err.message });

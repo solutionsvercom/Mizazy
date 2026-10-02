@@ -59,8 +59,18 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ code }),
     }),
-  placeOrder: (body: PlaceOrderBody) =>
-    request<PlacedOrder>("/orders", { method: "POST", body: JSON.stringify(body) }),
+  placeOrder: (body: PlaceOrderBody, adminToken?: string | null) =>
+    request<PlacedOrder & { cashfree?: { paymentSessionId: string; token: string } }>("/orders", {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: adminToken ? { "X-Admin-Token": adminToken } : undefined,
+    }),
+  paymentConfig: () => request<{ cashfree: boolean; mode: "sandbox" | "production" }>("/payments/config"),
+  verifyPayment: (orderNumber: string, token: string) =>
+    request<{ paymentStatus: "pending" | "confirmed" | "failed"; order: PlacedOrder }>("/payments/cashfree/verify", {
+      method: "POST",
+      body: JSON.stringify({ orderNumber, token }),
+    }),
   trackOrder: (orderNumber: string) =>
     request<PlacedOrder>(`/orders/track?${new URLSearchParams({ orderNumber }).toString()}`),
   myOrders: () => request<PlacedOrder[]>("/orders/mine"),
@@ -106,7 +116,7 @@ export interface PlaceOrderBody {
   }[];
   address: Address;
   delivery: "standard" | "express";
-  payment: { method: "upi" | "card" | "cod" | "netbanking"; upiId?: string };
+  payment: { method: "upi" | "card" | "cod" | "netbanking" };
   coupon?: string;
 }
 
@@ -136,7 +146,7 @@ export interface PlacedOrder {
   address: Address;
   items: OrderItem[];
   delivery: "standard" | "express";
-  payment: { method: string; status: string; upiId?: string };
+  payment: { method: string; status: string; upiId?: string; gateway?: string; cfPaymentId?: string; paymentGroup?: string };
   coupon?: string;
   totals: {
     subtotal: number;

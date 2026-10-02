@@ -62,6 +62,8 @@ export const adminApi = {
     request<Doc>(`/admin/${collection}`, { method: "POST", body: JSON.stringify(body) }),
   update: (collection: string, id: string, body: Record<string, unknown>) =>
     request<Doc>(`/admin/${collection}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  sendPaymentEmail: (orderId: string) =>
+    request<{ message: string }>(`/admin/orders/${orderId}/payment-email`, { method: "POST" }),
   remove: (collection: string, id: string) =>
     request<{ ok: boolean }>(`/admin/${collection}/${id}`, { method: "DELETE" }),
   uploadImages: async (files: FileList | File[], folder = "products") => {

@@ -22,6 +22,7 @@ export default function CollectionManager({ config, onAuthError, openId, onOpene
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<Doc | null>(null);
+  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -75,8 +76,9 @@ export default function CollectionManager({ config, onAuthError, openId, onOpene
         config={config}
         doc={editing}
         onCancel={() => setEditing(null)}
-        onSaved={() => {
+        onSaved={(message) => {
           setEditing(null);
+          setNotice(message || null);
           load();
         }}
         onDelete={config.canDelete && editing._id ? () => remove(editing) : undefined}
@@ -106,6 +108,12 @@ export default function CollectionManager({ config, onAuthError, openId, onOpene
       </div>
 
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {notice && (
+        <div className={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm mb-4 ${notice.ok ? "border-green-500/30 bg-green-500/10 text-green-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}>
+          <span>{notice.text}</span>
+          <button onClick={() => setNotice(null)} className="text-white/40 hover:text-white">×</button>
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-white/8 bg-[#0b0b0b]">
         <table className="w-full text-sm">
@@ -160,7 +168,7 @@ interface EditorProps {
   config: CollectionConfig;
   doc: Doc;
   onCancel: () => void;
-  onSaved: () => void;
+  onSaved: (message?: { text: string; ok: boolean }) => void;
   onDelete?: () => void;
   onAuthError: (err: unknown) => boolean;
 }
@@ -176,6 +184,21 @@ function Editor({ config, doc, onCancel, onSaved, onDelete, onAuthError }: Edito
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState("");
   const [error, setError] = useState("");
+  const [mailing, setMailing] = useState(false);
+  const [mailResult, setMailResult] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const sendPaymentEmail = async () => {
+    setMailing(true);
+    setMailResult(null);
+    try {
+      const res = await adminApi.sendPaymentEmail(doc._id);
+      setMailResult({ text: res.message, ok: true });
+    } catch (err) {
+      if (!onAuthError(err)) setMailResult({ text: err instanceof Error ? err.message : "Could not send the email", ok: false });
+    } finally {
+      setMailing(false);
+    }
+  };
 
   const sections = useMemo(() => {
     const out: { name: string; fields: Field[] }[] = [];
@@ -234,9 +257,20 @@ function Editor({ config, doc, onCancel, onSaved, onDelete, onAuthError }: Edito
     delete body._id;
     setSaving(true);
     try {
-      if (isNew) await adminApi.create(config.id, body);
-      else await adminApi.update(config.id, doc._id, body);
-      onSaved();
+      if (isNew) {
+        await adminApi.create(config.id, body);
+        onSaved();
+        return;
+      }
+      const saved = await adminApi.update(config.id, doc._id, body);
+      const paymentEmail = saved.paymentEmail as string | undefined;
+      onSaved(
+        paymentEmail === "sent"
+          ? { text: `Saved. Payment confirmation emailed to the customer from payment@mizazy.com.`, ok: true }
+          : paymentEmail
+            ? { text: `Saved, but the payment confirmation email was not sent: ${paymentEmail}`, ok: false }
+            : undefined
+      );
     } catch (err) {
       if (!onAuthError(err)) setError(err instanceof Error ? err.message : "Save failed");
       setSaving(false);
@@ -367,6 +401,24 @@ function Editor({ config, doc, onCancel, onSaved, onDelete, onAuthError }: Edito
           </div>
         ))}
       </div>
+
+      {config.id === "orders" && !isNew && (
+        <div className="rounded-xl border border-white/8 bg-[#0b0b0b] p-5 mt-6">
+          <h2 className="text-[#D4A520] text-xs font-bold uppercase tracking-wider mb-2">Payment confirmation email</h2>
+          <p className="text-white/40 text-xs mb-3">
+            Sends the customer a payment receipt from payment@mizazy.com. It goes out automatically when payment status changes to
+            "Confirmed / Paid"; use this button to send it again.
+          </p>
+          <button
+            onClick={sendPaymentEmail}
+            disabled={mailing}
+            className="px-4 py-2 rounded-lg border border-[#D4A520]/40 text-[#D4A520] text-sm font-semibold hover:bg-[#D4A520]/10 disabled:opacity-50"
+          >
+            {mailing ? "Sending…" : "Send payment confirmation email"}
+          </button>
+          {mailResult && <p className={`text-sm mt-3 ${mailResult.ok ? "text-green-400" : "text-red-400"}`}>{mailResult.text}</p>}
+        </div>
+      )}
 
       {error && <p className="text-red-400 text-sm mt-5">{error}</p>}
 

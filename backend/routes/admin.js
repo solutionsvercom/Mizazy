@@ -12,6 +12,7 @@ import Subscriber from "../models/Subscriber.js";
 import Cart from "../models/Cart.js";
 import { requireAdmin, signAdminToken } from "../middleware/adminAuth.js";
 import { serializeOrder } from "./orders.js";
+import { sendPaymentConfirmationEmail } from "../mailer.js";
 
 const router = Router();
 
@@ -205,6 +206,22 @@ router.post("/:collection", async (req, res) => {
   }
 });
 
+router.post("/orders/:id/payment-email", async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: "Order not found" });
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.payment?.status !== "confirmed") {
+      return res.status(400).json({ message: 'Set Payment status to "Confirmed / Paid" and save before sending the payment confirmation.' });
+    }
+    const user = order.user ? await User.findById(order.user) : null;
+    await sendPaymentConfirmationEmail(order, user);
+    res.json({ message: `Payment confirmation sent to ${order.email || user?.email} from payment@mizazy.com` });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 router.put("/:collection/:id", async (req, res) => {
   const config = collectionFor(req, res);
   if (!config) return;
@@ -223,11 +240,23 @@ router.put("/:collection/:id", async (req, res) => {
         if (updates.status !== doc.status || !doc.statusSetByAdmin) updates.statusUpdatedAt = new Date();
       }
     }
+    const markedPaid =
+      req.params.collection === "orders" && updates.payment?.status === "confirmed" && doc.payment?.status !== "confirmed";
+    if (markedPaid && !updates.payment.paidAt) updates.payment = { ...updates.payment, paidAt: new Date() };
     // findByIdAndUpdate (not doc.save) because Product has a field named "isNew", which clashes with Mongoose internals.
     let query = config.model.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true, runValidators: true });
     if (config.populate) query = query.populate(config.populate);
     const updated = await query;
-    res.json(serialize(req.params.collection, updated));
+    let paymentEmail;
+    if (markedPaid) {
+      try {
+        await sendPaymentConfirmationEmail(updated, updated.user ? await User.findById(updated.user) : null);
+        paymentEmail = "sent";
+      } catch (err) {
+        paymentEmail = err.message;
+      }
+    }
+    res.json({ ...serialize(req.params.collection, updated), ...(paymentEmail ? { paymentEmail } : {}) });
   } catch (err) {
     res.status(err.name === "ValidationError" || err.name === "CastError" || err.code === 11000 ? 400 : 500).json({
       message: err.code === 11000 ? "An item with this unique value already exists" : err.message,

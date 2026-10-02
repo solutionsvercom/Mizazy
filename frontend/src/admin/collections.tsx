@@ -104,7 +104,7 @@ export const COLLECTIONS: CollectionConfig[] = [
         { value: "pending", label: "Pending" },
         { value: "confirmed", label: "Confirmed / Paid" },
         { value: "failed", label: "Failed" },
-      ] },
+      ], help: 'Changing this to "Confirmed / Paid" emails the customer a payment confirmation from payment@mizazy.com.' },
       { key: "trackingNumber", label: "Tracking number", type: "text", section: "Shipping" },
       { key: "shippingPartner", label: "Shipping partner", type: "text", section: "Shipping" },
       { key: "estimatedDelivery", label: "Estimated delivery", type: "date", section: "Shipping" },

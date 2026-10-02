@@ -198,10 +198,18 @@ export async function sendOrderEmails(order, user) {
 
 /** Online payment receipt to the customer, sent from the payment mailbox. Never throws. */
 export async function sendPaymentReceiptEmail(order, user) {
+  if (!mailbox("payment") || !(order.email || user?.email)) return;
+  logFailures(`Payment receipt ${order.orderNumber}`, await Promise.allSettled([sendPaymentConfirmationEmail(order, user)]));
+}
+
+/** Payment confirmation / receipt from the payment mailbox. Throws if it can't be sent. */
+export async function sendPaymentConfirmationEmail(order, user) {
   const box = mailbox("payment");
+  if (!box) throw new Error("Payment mailbox (payment@mizazy.com) is not configured");
   const to = order.email || user?.email;
-  if (!box || !to) return;
+  if (!to) throw new Error("This order has no customer email. Add one under Customer → Customer email and save first.");
   const p = order.payment || {};
+  const online = Boolean(p.gateway);
   const first = escapeHtml((user?.name || order.address.name || "").split(" ")[0]);
   const paidAt = new Date(p.paidAt || Date.now()).toLocaleString("en-IN", {
     day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata",
@@ -209,27 +217,25 @@ export async function sendPaymentReceiptEmail(order, user) {
   const row = (label, value) =>
     `<tr><td style="padding:6px 0;color:#777;">${label}</td><td style="padding:6px 0;text-align:right;color:#222;">${value}</td></tr>`;
 
-  logFailures(`Payment receipt ${order.orderNumber}`, await Promise.allSettled([
-    box.transport.sendMail({
-      from: box.from,
-      to,
-      replyTo: process.env.ADMIN_EMAIL || undefined,
-      subject: `Payment received · ${rupees(order.totals.total)} for MIZAZY order ${order.orderNumber}`,
-      html: layout(
-        `Payment received${first ? `, ${first}` : ""}`,
-        `<p style="font-size:14px;color:#555;margin:0 0 18px;">We've received your payment. This email is your receipt.</p>
-         <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #eee;border-bottom:1px solid #eee;">
-           ${row("Amount paid", `<strong>${rupees(order.totals.total)}</strong>`)}
-           ${row("Order ID", escapeHtml(order.orderNumber))}
-           ${p.cfPaymentId ? row("Transaction ID", escapeHtml(p.cfPaymentId)) : ""}
-           ${row("Payment method", escapeHtml(PAYMENT_LABELS[p.paymentGroup] || PAYMENT_LABELS[p.method] || p.method))}
-           ${row("Paid on", escapeHtml(paidAt))}
-         </table>
-         <p style="font-size:12px;color:#999;margin:18px 0 0;">Payments are processed securely by Cashfree Payments. Keep this email for your records.</p>
-         ${button(`${getPublicSiteUrl()}/track`, "Track your order")}`
-      ),
-    }),
-  ]));
+  await box.transport.sendMail({
+    from: box.from,
+    to,
+    replyTo: process.env.ADMIN_EMAIL || undefined,
+    subject: `Payment received · ${rupees(order.totals.total)} for MIZAZY order ${order.orderNumber}`,
+    html: layout(
+      `Payment received${first ? `, ${first}` : ""}`,
+      `<p style="font-size:14px;color:#555;margin:0 0 18px;">We've received your payment. This email is your receipt.</p>
+       <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #eee;border-bottom:1px solid #eee;">
+         ${row("Amount paid", `<strong>${rupees(order.totals.total)}</strong>`)}
+         ${row("Order ID", escapeHtml(order.orderNumber))}
+         ${p.cfPaymentId ? row("Transaction ID", escapeHtml(p.cfPaymentId)) : ""}
+         ${row("Payment method", escapeHtml(PAYMENT_LABELS[p.paymentGroup] || PAYMENT_LABELS[p.method] || p.method))}
+         ${row("Paid on", escapeHtml(paidAt))}
+       </table>
+       <p style="font-size:12px;color:#999;margin:18px 0 0;">${online ? "Payments are processed securely by Cashfree Payments. " : ""}Keep this email for your records.</p>
+       ${button(`${getPublicSiteUrl()}/track`, "Track your order")}`
+    ),
+  });
 }
 
 /** Password reset link, sent from the customer mailbox. Throws if the mailbox is not configured or sending fails. */

@@ -17,8 +17,10 @@ import FaqPage from "./pages/FaqPage";
 import ReviewsPage from "./pages/ReviewsPage";
 import PaymentStatusPage from "./pages/PaymentStatusPage";
 import WarrantyPage from "./pages/WarrantyPage";
+import CategoryPage from "./pages/CategoryPage";
+import { categorySlug } from "./categories";
 
-type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs" | "reviews" | "payment-status" | "warranty";
+type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs" | "reviews" | "payment-status" | "warranty" | "category";
 
 interface Toast {
   id: number;
@@ -46,18 +48,26 @@ function productFromPath(products: Product[]): Product | null {
   return products.find((p) => p.slug === key || p.id === key) ?? null;
 }
 
-function routeFromLocation(products: Product[], hasOrder: boolean): { page: Page; product: Product | null } {
-  const product = productFromPath(products);
-  if (product) return { page: "product", product };
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  const page = SIMPLE_PAGES[path];
-  if (!page || (page === "confirmation" && !hasOrder)) return { page: "home", product: null };
-  return { page, product: null };
+function categorySlugFromPath(): string | null {
+  const match = window.location.pathname.match(/^\/category\/([^/]+)\/?$/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-function pathFor(page: Page, product: Product | null): string {
+function routeFromLocation(products: Product[], hasOrder: boolean): { page: Page; product: Product | null; categorySlug: string | null } {
+  const product = productFromPath(products);
+  if (product) return { page: "product", product, categorySlug: null };
+  const category = categorySlugFromPath();
+  if (category) return { page: "category", product: null, categorySlug: category };
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const page = SIMPLE_PAGES[path];
+  if (!page || (page === "confirmation" && !hasOrder)) return { page: "home", product: null, categorySlug: null };
+  return { page, product: null, categorySlug: null };
+}
+
+function pathFor(page: Page, product: Product | null, category: string | null): string {
   if (page === "product" && product) return `/product/${product.slug || product.id}`;
-  if (page === "home" || page === "product") return "/";
+  if (page === "category" && category) return `/category/${category}`;
+  if (page === "home" || page === "product" || page === "category") return "/";
   return `/${page}`;
 }
 
@@ -66,6 +76,7 @@ export default function App() {
   const [initialRoute] = useState(() => routeFromLocation(products, false));
   const [page, setPage] = useState<Page>(initialRoute.page);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialRoute.product);
+  const [categorySlugValue, setCategorySlugValue] = useState<string | null>(initialRoute.categorySlug);
   const replaceNextEntry = useRef(true);
   const productsRef = useRef(products);
   productsRef.current = products;
@@ -81,13 +92,13 @@ export default function App() {
   }, [initialRoute]);
 
   useEffect(() => {
-    const path = pathFor(page, selectedProduct);
+    const path = pathFor(page, selectedProduct, categorySlugValue);
     const replace = replaceNextEntry.current;
     replaceNextEntry.current = false;
     if (window.location.pathname === path) return;
     if (replace) window.history.replaceState({ mizazy: true }, "", path);
     else window.history.pushState({ mizazy: true }, "", path);
-  }, [page, selectedProduct]);
+  }, [page, selectedProduct, categorySlugValue]);
   const [cartOpen, setCartOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -101,10 +112,11 @@ export default function App() {
   useEffect(() => {
     const onPopState = () => {
       const next = routeFromLocation(productsRef.current, hasOrderRef.current);
-      if (pathFor(next.page, next.product) !== window.location.pathname) {
+      if (pathFor(next.page, next.product, next.categorySlug) !== window.location.pathname) {
         replaceNextEntry.current = true;
       }
       if (next.product) setSelectedProduct(next.product);
+      setCategorySlugValue(next.categorySlug);
       setPage(next.page);
       setCartOpen(false);
       setSearchOpen(false);
@@ -124,6 +136,13 @@ export default function App() {
     if (product) setSelectedProduct(product);
     if (to === "warranty") setWarrantyProductId(product?.id ?? null);
     setPage(to as Page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setCartOpen(false);
+  }, []);
+
+  const openCategory = useCallback((name: string) => {
+    setCategorySlugValue(categorySlug(name));
+    setPage("category");
     window.scrollTo({ top: 0, behavior: "smooth" });
     setCartOpen(false);
   }, []);
@@ -249,6 +268,7 @@ export default function App() {
           onViewProduct={handleViewProduct}
           onAddToCart={handleAddToCart}
           onNavigate={navigate}
+          onOpenCategory={openCategory}
         />
       )}
 
@@ -283,6 +303,15 @@ export default function App() {
           order={placedOrder}
           onNavigate={navigate}
           onTrack={handleTrack}
+        />
+      )}
+
+      {page === "category" && categorySlugValue && (
+        <CategoryPage
+          slug={categorySlugValue}
+          onNavigate={navigate}
+          onViewProduct={handleViewProduct}
+          onAddToCart={handleAddToCart}
         />
       )}
 

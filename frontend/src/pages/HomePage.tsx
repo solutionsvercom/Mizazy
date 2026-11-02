@@ -14,6 +14,7 @@ interface HomePageProps {
   onViewProduct: (product: Product) => void;
   onAddToCart: (item: CartItem) => void;
   onNavigate: (page: string) => void;
+  onOpenCategory: (name: string) => void;
 }
 
 /* ── Scroll reveal hook ───── */
@@ -282,7 +283,7 @@ function CategoryMedia({ src, alt }: { src: string; alt: string }) {
   return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
 }
 
-function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
+function CategorySection({ onOpenCategory }: { onOpenCategory: (name: string) => void }) {
   const { categories } = useStore();
   const ref = useRef<HTMLDivElement>(null);
   const visible = useReveal(ref);
@@ -300,10 +301,11 @@ function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
           <div className="hidden lg:grid grid-cols-4 gap-3" style={{ gridTemplateRows: "440px" }}>
             {categories.slice(0, 4).map((cat) => {
               return (
-                <div
+                <button
+                  type="button"
                   key={cat.name}
-                  className="category-card"
-                  onClick={() => onNavigate("home")}
+                  className="category-card text-left w-full h-full p-0 bg-transparent"
+                  onClick={() => onOpenCategory(cat.name)}
                 >
                   <div className="cat-overlay absolute inset-0 z-10"
                     style={{ background: "linear-gradient(to top, rgba(5,5,5,0.93) 0%, rgba(5,5,5,0.3) 50%, transparent 100%)" }} />
@@ -321,7 +323,7 @@ function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -329,11 +331,12 @@ function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
           {/* Mobile / tablet: 2-column grid */}
           <div className="grid lg:hidden grid-cols-2 sm:grid-cols-4 gap-3">
             {categories.slice(0, 4).map((cat) => (
-              <div
+              <button
+                type="button"
                 key={cat.name}
-                className="category-card"
+                className="category-card text-left w-full p-0 bg-transparent"
                 style={{ aspectRatio: "4/5" }}
-                onClick={() => onNavigate("home")}
+                onClick={() => onOpenCategory(cat.name)}
               >
                 <div className="cat-overlay absolute inset-0 z-10"
                   style={{ background: "linear-gradient(to top, rgba(5,5,5,0.92) 0%, rgba(5,5,5,0.1) 55%, transparent 100%)" }} />
@@ -344,7 +347,7 @@ function CategorySection({ onNavigate }: { onNavigate: (p: string) => void }) {
                     <span className="text-white/35 text-[10px]">{cat.count} Products</span>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -1111,14 +1114,14 @@ const SHOP_SECTIONS: Record<string, string> = {
 /* ═══════════════════════════════════════════════════════════
    MAIN EXPORT
 ═══════════════════════════════════════════════════════════ */
-export default function HomePage({ onViewProduct, onAddToCart, onNavigate }: HomePageProps) {
+export default function HomePage({ onViewProduct, onAddToCart, onNavigate, onOpenCategory }: HomePageProps) {
   return (
     <div>
       <Hero onShop={() => {
         const el = document.getElementById("all-products");
         el?.scrollIntoView({ behavior: "smooth", block: "start" });
       }} />
-      <CategorySection onNavigate={onNavigate} />
+      <CategorySection onOpenCategory={onOpenCategory} />
       <BestSellers onViewProduct={onViewProduct} onAddToCart={onAddToCart} />
       <NewArrivals onViewProduct={onViewProduct} onAddToCart={onAddToCart} />
       <FeaturedProduct onViewProduct={onViewProduct} onAddToCart={onAddToCart} />

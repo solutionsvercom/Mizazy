@@ -16,6 +16,7 @@ import uploadRoutes from "./routes/upload.js";
 import cartRoutes from "./routes/cart.js";
 import adminRoutes from "./routes/admin.js";
 import paymentRoutes from "./routes/payments.js";
+import warrantyRoutes from "./routes/warranty.js";
 import { isCashfreeConfigured, cashfreeMode } from "./cashfree.js";
 import { isDelhiveryConfigured, delhiveryMode } from "./delhivery.js";
 import { startShipmentTracking } from "./routes/orders.js";
@@ -72,6 +73,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/warranty", warrantyRoutes);
 app.use("/api", catalogRoutes);
 
 app.use("/api", (_req, res) => {
@@ -105,7 +107,7 @@ app.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     const message =
       err.code === "LIMIT_FILE_SIZE"
-        ? "Image too large (max 5MB)"
+        ? "File too large (max 5MB)"
         : err.code === "LIMIT_FILE_COUNT"
           ? "Too many images (max 8)"
           : err.message;

@@ -165,11 +165,14 @@ export const INFO_TOPICS: Record<InfoTopic, { title: string; body: ReactNode }> 
         <H>How to claim</H>
         <List
           items={[
-            <>Email <Mail /> with your Order ID, the product name and a short description of the issue.</>,
-            "Attach photos or a video showing the problem.",
-            "After verification, we repair or replace the product.",
+            "Open Claim Warranty and choose the product.",
+            "Enter your name, phone number and email, then upload a photo or PDF of your invoice.",
+            "You'll get a confirmation email, and after verification we repair or replace the product.",
           ]}
         />
+        <P>
+          You can also email <Mail /> with your Order ID if you need help with a claim.
+        </P>
       </>
     ),
   },
@@ -281,7 +284,6 @@ export const FOOTER_TOPICS: Record<string, InfoTopic> = {
   "Contact Us": "contact",
   "Shipping Info": "shipping",
   Returns: "returns",
-  Warranty: "warranty",
   "Privacy Policy": "privacy",
   "Terms of Use": "terms",
   "Refund Policy": "refund",

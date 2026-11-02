@@ -10,6 +10,7 @@ import Order from "../models/Order.js";
 import User from "../models/User.js";
 import Subscriber from "../models/Subscriber.js";
 import Cart from "../models/Cart.js";
+import WarrantyClaim from "../models/WarrantyClaim.js";
 import { requireAdmin, signAdminToken } from "../middleware/adminAuth.js";
 import { refreshTracking, serializeOrder } from "./orders.js";
 import { createShipment, isDelhiveryConfigured, isDelhiveryPartner } from "../delhivery.js";
@@ -45,6 +46,13 @@ const COLLECTIONS = {
     readOnly: ["password", "resetPasswordHash", "resetPasswordExpires"],
   },
   subscribers: { model: Subscriber, search: ["email"], sort: { createdAt: -1 } },
+  warrantyClaims: {
+    model: WarrantyClaim,
+    search: ["claimNumber", "productName", "name", "phone", "email"],
+    sort: { createdAt: -1 },
+    noCreate: true,
+    readOnly: ["claimNumber", "productId", "productName", "name", "phone", "email", "invoiceUrl", "invoicePublicId", "emailSent"],
+  },
   carts: {
     model: Cart,
     search: [],

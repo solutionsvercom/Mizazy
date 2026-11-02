@@ -78,6 +78,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
+  claimWarranty: async (body: FormData) => {
+    const res = await fetch("/api/warranty", { method: "POST", body });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data as { message?: string }).message || "Something went wrong");
+    return data as { claimNumber: string; email: string; emailed: boolean };
+  },
 };
 
 export interface Address {

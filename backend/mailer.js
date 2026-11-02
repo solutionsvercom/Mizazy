@@ -339,6 +339,57 @@ export async function sendCartReminderEmail(params) {
   });
 }
 
+/** Thank-you to the customer plus a copy for the store inbox. Never throws. Returns whether the customer email was sent. */
+export async function sendWarrantyClaimEmails(claim) {
+  const box = mailbox("customer") || mailbox("orders");
+  if (!box) {
+    console.warn("Mailbox not configured — skipping warranty emails for", claim.claimNumber);
+    return false;
+  }
+  const first = escapeHtml(String(claim.name || "").trim().split(" ")[0]);
+  const adminTo = process.env.ADMIN_EMAIL || box.user;
+  const row = (label, value) =>
+    `<tr><td style="padding:6px 0;color:#777;">${label}</td><td style="padding:6px 0;text-align:right;color:#222;">${value}</td></tr>`;
+
+  const results = await Promise.allSettled([
+    box.transport.sendMail({
+      from: box.from,
+      to: claim.email,
+      subject: `Thank you for purchasing with MIZAZY — warranty ${claim.claimNumber} submitted`,
+      html: layout(
+        `Thank you for purchasing with us${first ? `, ${first}` : ""}`,
+        `<p style="font-size:14px;color:#555;margin:0 0 16px;">We've received your warranty submission. Thank you for purchasing with MIZAZY.</p>
+         <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #eee;border-bottom:1px solid #eee;">
+           ${row("Claim reference", `<strong>${escapeHtml(claim.claimNumber)}</strong>`)}
+           ${row("Product", escapeHtml(claim.productName))}
+           ${row("Name", escapeHtml(claim.name))}
+           ${row("Phone", escapeHtml(claim.phone))}
+         </table>
+         <p style="font-size:14px;color:#555;margin:16px 0 0;">Our team will review your invoice and contact you at this email address. Keep this message for your records.</p>`
+      ),
+    }),
+    box.transport.sendMail({
+      from: box.from,
+      to: adminTo,
+      replyTo: claim.email,
+      subject: `Warranty claim ${claim.claimNumber} · ${claim.productName} · ${claim.name}`,
+      html: layout(
+        `New warranty claim ${escapeHtml(claim.claimNumber)}`,
+        `<p style="font-size:14px;color:#555;margin:0 0 16px;">A customer submitted a warranty claim.</p>
+         <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #eee;border-bottom:1px solid #eee;">
+           ${row("Product", escapeHtml(claim.productName))}
+           ${row("Name", escapeHtml(claim.name))}
+           ${row("Phone", escapeHtml(claim.phone))}
+           ${row("Email", escapeHtml(claim.email))}
+         </table>
+         <p style="font-size:14px;margin:16px 0 0;"><a href="${escapeHtml(claim.invoiceUrl)}">View uploaded invoice</a></p>`
+      ),
+    }),
+  ]);
+  logFailures(`Warranty ${claim.claimNumber}`, results);
+  return results[0].status === "fulfilled";
+}
+
 /** Welcome email after registration, sent from the customer mailbox. Never throws. */
 export async function sendWelcomeEmail(user) {
   const box = mailbox("customer");

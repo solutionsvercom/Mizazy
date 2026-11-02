@@ -1060,6 +1060,7 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
                           return;
                         }
                         if (FOOTER_TOPICS[l]) setInfoTopic(FOOTER_TOPICS[l]);
+                        else if (l === "Warranty") onNavigate("warranty");
                         else if (l === "FAQs") onNavigate("faqs");
                         else if (l === "Track Order") onNavigate("track");
                         else if (l === "Reviews") onNavigate("reviews");

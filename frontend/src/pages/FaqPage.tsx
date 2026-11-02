@@ -39,7 +39,7 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       { q: "Do MIZAZY products come with a warranty?", a: "Yes. Every product has a 1-year warranty from the date of delivery against manufacturing defects." },
       { q: "What does the warranty not cover?", a: "Physical or liquid damage, damage from incompatible chargers, unauthorised repairs, and normal wear and tear." },
-      { q: "How do I make a warranty claim?", a: `Email ${CONTACT_EMAIL} with your Order ID, the product name, a description of the issue and photos or a video. After verification we'll repair or replace it.` },
+      { q: "How do I make a warranty claim?", a: "Open Warranty in the footer (or go to mizazy.com/warranty). Choose the product, enter your name, phone number and email, and upload your invoice. You'll get a confirmation email, and after verification we'll repair or replace it." },
     ],
   },
   {

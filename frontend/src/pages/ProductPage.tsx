@@ -6,7 +6,7 @@ interface ProductPageProps {
   product: Product;
   onAddToCart: (item: CartItem) => void;
   onBuyNow: (item: CartItem) => void;
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, product?: Product) => void;
   onViewProduct: (product: Product) => void;
 }
 
@@ -549,7 +549,14 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                 <div className="text-white/50 text-sm space-y-2.5 leading-relaxed">
                   <p>{product.warranty || "Manufacturer warranty covers manufacturing defects for the period specified in specifications."}</p>
                   <p>7-day return policy from date of delivery for unused products in original packaging with all accessories.</p>
-                  <p>For warranty claims or returns, contact MIZAZY support with your Order ID and proof of purchase.</p>
+                  <p>For warranty claims, choose this product and upload your invoice. For returns, contact MIZAZY support with your Order ID.</p>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate("warranty", product)}
+                    className="btn-gold mt-2"
+                  >
+                    Claim warranty
+                  </button>
                 </div>
               </Accordion>
 

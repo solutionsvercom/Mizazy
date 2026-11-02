@@ -326,4 +326,45 @@ export const COLLECTIONS: CollectionConfig[] = [
     ],
     fields: [{ key: "email", label: "Email", type: "text", required: true }],
   },
+  {
+    id: "warrantyClaims",
+    label: "Warranty claims",
+    singular: "warranty claim",
+    canCreate: false,
+    canDelete: true,
+    columns: [
+      { label: "Claim", render: (d) => <span className="font-semibold text-white">{text(d.claimNumber)}</span> },
+      { label: "Product", render: (d) => text(d.productName) },
+      {
+        label: "Customer",
+        render: (d) => (
+          <>
+            <span className="font-semibold text-white">{text(d.name)}</span>
+            <div className="text-white/35 text-xs">{text(d.email)} · {text(d.phone)}</div>
+          </>
+        ),
+      },
+      { label: "Status", render: (d) => pill(text(d.status), d.status === "resolved" ? "green" : "gold") },
+      { label: "Submitted", render: (d) => dateTime(d.createdAt) },
+    ],
+    fields: [
+      { key: "claimNumber", label: "Claim number", type: "readonly" },
+      { key: "productName", label: "Product", type: "readonly" },
+      { key: "name", label: "Name", type: "readonly" },
+      { key: "phone", label: "Phone", type: "readonly" },
+      { key: "email", label: "Email", type: "readonly" },
+      { key: "invoiceUrl", label: "Invoice URL", type: "readonly" },
+      { key: "emailSent", label: "Confirmation email sent", type: "readonly" },
+      {
+        key: "status",
+        label: "Status",
+        type: "select",
+        options: [
+          { value: "submitted", label: "Submitted" },
+          { value: "reviewing", label: "Reviewing" },
+          { value: "resolved", label: "Resolved" },
+        ],
+      },
+    ],
+  },
 ];

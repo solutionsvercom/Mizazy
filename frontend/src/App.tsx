@@ -16,8 +16,9 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import FaqPage from "./pages/FaqPage";
 import ReviewsPage from "./pages/ReviewsPage";
 import PaymentStatusPage from "./pages/PaymentStatusPage";
+import WarrantyPage from "./pages/WarrantyPage";
 
-type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs" | "reviews" | "payment-status";
+type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs" | "reviews" | "payment-status" | "warranty";
 
 interface Toast {
   id: number;
@@ -35,6 +36,7 @@ const SIMPLE_PAGES: Record<string, Page> = {
   "/faqs": "faqs",
   "/reviews": "reviews",
   "/payment-status": "payment-status",
+  "/warranty": "warranty",
 };
 
 function productFromPath(products: Product[]): Product | null {
@@ -92,6 +94,7 @@ export default function App() {
   const [placedOrder, setPlacedOrder] = useState<PlacedOrder | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [trackPrefill, setTrackPrefill] = useState<string | undefined>(undefined);
+  const [warrantyProductId, setWarrantyProductId] = useState<string | null>(null);
   const hasOrderRef = useRef(false);
   hasOrderRef.current = placedOrder !== null;
 
@@ -119,6 +122,7 @@ export default function App() {
 
   const navigate = useCallback((to: string, product?: Product) => {
     if (product) setSelectedProduct(product);
+    if (to === "warranty") setWarrantyProductId(product?.id ?? null);
     setPage(to as Page);
     window.scrollTo({ top: 0, behavior: "smooth" });
     setCartOpen(false);
@@ -283,6 +287,10 @@ export default function App() {
       )}
 
       {page === "faqs" && <FaqPage onNavigate={navigate} />}
+
+      {page === "warranty" && (
+        <WarrantyPage onNavigate={navigate} initialProductId={warrantyProductId} />
+      )}
 
       {page === "reviews" && <ReviewsPage onNavigate={navigate} />}
 

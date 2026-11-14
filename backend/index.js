@@ -80,6 +80,37 @@ app.use("/api", (_req, res) => {
   res.status(404).json({ message: "Not found" });
 });
 
+// The mark from the Cloudinary header logo. Local icon files are Git LFS
+// pointers on the host, so the tab icon is served from this image instead.
+const TAB_ICON_URL =
+  "https://res.cloudinary.com/aiwtovua/image/upload/c_crop,x_421,y_22,w_780,h_780/c_fill,w_64,h_64,f_png/v1789379952/Mizazy_Logo.png";
+const APPLE_TOUCH_ICON_URL =
+  "https://res.cloudinary.com/aiwtovua/image/upload/c_crop,x_421,y_22,w_780,h_780/c_fill,w_180,h_180,f_png/v1789379952/Mizazy_Logo.png";
+const iconBytes = new Map();
+
+async function sendTabIcon(res, url) {
+  let bytes = iconBytes.get(url);
+  if (!bytes) {
+    const upstream = await fetch(url);
+    if (!upstream.ok) {
+      res.status(502).end();
+      return;
+    }
+    bytes = Buffer.from(await upstream.arrayBuffer());
+    iconBytes.set(url, bytes);
+  }
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.end(bytes);
+}
+
+app.get(["/favicon.ico", "/favicon.png"], (_req, res, next) => {
+  sendTabIcon(res, TAB_ICON_URL).catch(next);
+});
+app.get(["/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"], (_req, res, next) => {
+  sendTabIcon(res, APPLE_TOUCH_ICON_URL).catch(next);
+});
+
 if (fs.existsSync(publicDir)) {
   app.use(
     express.static(publicDir, {

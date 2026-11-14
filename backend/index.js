@@ -119,6 +119,20 @@ app.get("/google5641f5728caab98f.html", (_req, res) => {
   res.sendFile(googleVerificationFile);
 });
 
+// Serve SEO files before the React fallback. Otherwise /sitemap.xml and
+// /robots.txt are rewritten to index.html.
+const publicSourceDir = path.join(__dirname, "../frontend/public");
+app.get("/sitemap.xml", (_req, res) => {
+  res.type("application/xml");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.sendFile(path.join(publicSourceDir, "sitemap.xml"));
+});
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.sendFile(path.join(publicSourceDir, "robots.txt"));
+});
+
 if (fs.existsSync(publicDir)) {
   app.use(
     express.static(publicDir, {

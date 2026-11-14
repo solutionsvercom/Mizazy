@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /account
+Disallow: /checkout
+Disallow: /confirmation
+Disallow: /reset-password
+Disallow: /payment-status
+
+Sitemap: https://www.mizazy.com/sitemap.xml

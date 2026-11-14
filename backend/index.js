@@ -111,6 +111,14 @@ app.get(["/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"], (_req, r
   sendTabIcon(res, APPLE_TOUCH_ICON_URL).catch(next);
 });
 
+// Google Search Console HTML file. Must stay at the site root.
+const googleVerificationFile = path.join(__dirname, "../frontend/public/google5641f5728caab98f.html");
+app.get("/google5641f5728caab98f.html", (_req, res) => {
+  res.type("html");
+  res.setHeader("Cache-Control", "no-cache");
+  res.sendFile(googleVerificationFile);
+});
+
 if (fs.existsSync(publicDir)) {
   app.use(
     express.static(publicDir, {

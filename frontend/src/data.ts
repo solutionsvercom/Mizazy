@@ -63,7 +63,7 @@ export const products: Product[] = [
     title:
       "Mizazy Wireless Buds 104 TWS Earbuds with 35H Backup, Bluetooth 5.0, Quad Mic, Environmental Noise Cancellation & HD Sound",
     slug: "mizazy-wireless-buds-104",
-    metaTitle: "Mizazy Wireless Buds 104 | 35H Backup | Bluetooth 5.0 | ₹1,499",
+    metaTitle: "Mizazy Wireless Buds 104 TWS Earbuds",
     metaDescription:
       "Buy Mizazy Wireless Buds 104 TWS Earbuds with 35H backup, Bluetooth 5.0, Quad Mic, Environmental Noise Cancellation, Google Fast Pairing and HD Sound at ₹1,499.",
     tagline: "35H Backup | Bluetooth 5.0 | Quad Mic | ENC | HD Sound",
@@ -221,7 +221,7 @@ export const products: Product[] = [
     title:
       "Mizazy 120W Fast USB Data Cable USB-A to Type-C, Fast Charging, High-Speed Data Sync, Metallic Connectors, 1 Meter Durable Cable",
     slug: "mizazy-120w-fast-usb-data-cable",
-    metaTitle: "Mizazy 120W Fast USB Data Cable | USB-A to Type-C | ₹349",
+    metaTitle: "Mizazy 120W USB-A to Type-C Data Cable",
     metaDescription:
       "Buy Mizazy 120W Fast USB Data Cable with USB-A to Type-C connectivity, fast charging support, high-speed data sync, metallic connectors, durable PVC jacket and 1M length at ₹349.",
     ogTitle: "Mizazy 120W Fast USB Data Cable | USB-A to Type-C",
@@ -423,7 +423,7 @@ export const products: Product[] = [
     title:
       "Mizazy Buds X Prime True Wireless Earbuds with Bluetooth 5.0, 40H Backup, HD Sound & Built-in Mic",
     slug: "mizazy-buds-x-prime-tws-earbuds",
-    metaTitle: "Mizazy Buds X Prime TWS Earbuds | Bluetooth 5.0 | 40H Backup",
+    metaTitle: "Mizazy Buds X Prime TWS Earbuds",
     metaDescription:
       "Buy Mizazy Buds X Prime TWS Earbuds with Bluetooth 5.0, HD sound, built-in mic and up to 40 hours backup with charging case. Available in Black and Green at ₹1,199.",
     imageAlt: "Mizazy Buds X Prime True Wireless Earbuds",
@@ -564,9 +564,9 @@ export const products: Product[] = [
     title:
       "Mizazy 20W USB-C Fast Charger Power Adapter for iPhone | iPhone Compatible PD Charger | Compact & Portable Wall Charger | Fast Charging | Safe & Reliable Charging",
     slug: "mizazy-20w-usb-c-fast-charger-for-iphone",
-    metaTitle: "Mizazy 20W USB-C Fast Charger for iPhone | Power Adapter | ₹899",
+    metaTitle: "Mizazy 20W USB-C Charger for iPhone",
     metaDescription:
-      "Buy Mizazy 20W USB-C Fast Charger for iPhone at ₹899. iPhone compatible, compact and portable USB-C PD power adapter with fast charging and multiple safety protection features for iPhone, iPad and other compatible devices.",
+      "Buy the Mizazy 20W USB-C charger for iPhone at ₹899. Compact USB-C power adapter with fast charging and safety protection for compatible devices.",
     ogTitle: "Mizazy 20W USB-C Fast Charger for iPhone | Fast Charging Power Adapter",
     ogDescription:
       "Mizazy 20W USB-C Fast Charger for iPhone with compact design, iPhone compatible fast charging support and multiple safety protection features. Get it at an offer price of ₹899.",
@@ -743,7 +743,7 @@ export const products: Product[] = [
     title:
       "Mizazy 135W Super Fast Charger with USB-C & USB-A, Intelligent Chip, Quick Charge & Universal Compatibility",
     slug: "mizazy-135w-super-fast-charger",
-    metaTitle: "Mizazy 135W Super Fast Charger | USB-C + USB-A | ₹899",
+    metaTitle: "Mizazy 135W USB-C and USB-A Charger",
     metaDescription:
       "Buy Mizazy 135W Super Fast Charger with USB-C and USB-A ports, intelligent chip, fast charging and multiple protection features. Available at an offer price of ₹899.",
     tagline: "135W Max. USB-C + USB-A. Intelligent chip.",
@@ -884,7 +884,7 @@ export const products: Product[] = [
     title:
       "Mizazy 140W Fast Charging Data Cable USB-A to Type-C, 3A Fast Charging, 480Mbps High-Speed Data Sync, 1 Meter Nylon Braided Cable",
     slug: "mizazy-140w-fast-charging-data-cable",
-    metaTitle: "Mizazy 140W Fast Charging Data Cable | USB-A to Type-C | ₹379",
+    metaTitle: "Mizazy 140W USB-A to Type-C Data Cable",
     metaDescription:
       "Buy Mizazy 140W Fast Charging Data Cable with USB-A to Type-C connector, up to 3A current, 480Mbps data transfer, 1M nylon braided design and reinforced connectors at ₹379.",
     ogTitle: "Mizazy 140W Fast Charging Data Cable | USB-A to Type-C",
@@ -1084,7 +1084,7 @@ export const products: Product[] = [
     title:
       "Mizazy Equalizer Bluetooth Neckband Earphones with 100H Playtime, 13mm Driver, Magnetic Earbuds, Type-C Charging & HD Stereo Sound",
     slug: "mizazy-equalizer-bluetooth-neckband",
-    metaTitle: "Mizazy Equalizer Bluetooth Neckband | 100H Playtime | ₹999",
+    metaTitle: "Mizazy Equalizer Bluetooth Neckband",
     metaDescription:
       "Buy Mizazy Equalizer Bluetooth Neckband with 100H playtime, 13mm drivers, Bluetooth 5.2, magnetic earbuds, Type-C charging and HD stereo sound at ₹999.",
     tagline: "100H playtime. 13mm drivers. Bluetooth 5.2.",
@@ -1200,7 +1200,7 @@ export const products: Product[] = [
     name: "Mizazy 65W Fast USB Data Cable",
     title: "Mizazy 65W Fast USB Data Cable USB-A to Type-C, Fast Charging, USB 2.0 Data Sync, Durable Build",
     slug: "mizazy-65w-fast-usb-data-cable",
-    metaTitle: "Mizazy 65W Fast USB Data Cable | USB-A to Type-C | ₹349",
+    metaTitle: "Mizazy 65W USB-A to Type-C Data Cable",
     metaDescription:
       "Buy Mizazy 65W Fast USB Data Cable with USB-A to Type-C connectivity, fast charging support, USB 2.0 data sync and durable build at ₹349.",
     ogTitle: "Mizazy 65W Fast USB Data Cable | USB-A to Type-C",

@@ -8,4 +8,4 @@ Disallow: /confirmation
 Disallow: /reset-password
 Disallow: /payment-status
 
-Sitemap: https://www.mizazy.com/sitemap.xml
+Sitemap: https://mizazy.com/sitemap.xml

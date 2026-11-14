@@ -231,7 +231,7 @@ export default function WarrantyPage({ onNavigate, initialProductId }: WarrantyP
         {step === 2 && product && (
           <form onSubmit={submit} className="bg-[#0e0e0e] rounded-2xl border border-white/06 p-5 sm:p-8">
             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-white/06">
-              <img src={product.image} alt="" className="w-16 h-16 rounded-lg object-contain bg-white/5" />
+              <img src={product.image} alt={product.name} className="w-16 h-16 rounded-lg object-contain bg-white/5" />
               <div className="flex-1 min-w-0">
                 <p className="text-white/35 text-xs uppercase tracking-wide font-display font-600">Selected product</p>
                 <p className="font-display font-700 text-white truncate">{product.name}</p>

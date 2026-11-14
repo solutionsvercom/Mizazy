@@ -11,6 +11,7 @@ export default function ReviewsPage({ onNavigate }: ReviewsPageProps) {
         <button onClick={() => onNavigate("home")} className="text-white/40 hover:text-white text-sm transition-colors">
           ← Back to home
         </button>
+        <h1 className="section-heading text-4xl sm:text-5xl text-white mt-8">Customer Reviews</h1>
       </div>
       <ReviewsSection />
     </div>

@@ -22,6 +22,8 @@ import { isDelhiveryConfigured, delhiveryMode } from "./delhivery.js";
 import { startShipmentTracking } from "./routes/orders.js";
 import { getAllowedOrigins, getAppUrl } from "./config.js";
 import { configureCloudinary } from "./cloudinary.js";
+import { products as catalogProducts } from "./catalog.js";
+import { applyToIndexHtml, resolvePageMeta } from "../frontend/src/pageMeta.js";
 import { verifyMailer } from "./mailer.js";
 import { startCartReminders } from "./cartReminders.js";
 
@@ -34,6 +36,12 @@ const publicDir = path.join(__dirname, "public");
 const allowedOrigins = getAllowedOrigins();
 
 app.set("trust proxy", 1);
+app.use((req, res, next) => {
+  if (req.hostname === "www.mizazy.com") {
+    return res.redirect(301, `https://mizazy.com${req.originalUrl}`);
+  }
+  next();
+});
 app.use(compression());
 
 app.use(
@@ -136,6 +144,7 @@ app.get("/robots.txt", (_req, res) => {
 if (fs.existsSync(publicDir)) {
   app.use(
     express.static(publicDir, {
+      index: false,
       setHeaders(res, filePath) {
         // Vite emits content-hashed file names under /assets, so they never change once built.
         if (filePath.includes(`${path.sep}assets${path.sep}`)) {
@@ -148,9 +157,12 @@ if (fs.existsSync(publicDir)) {
   );
   app.use((req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
-    res.setHeader("Cache-Control", "no-cache");
-    res.sendFile(path.join(publicDir, "index.html"), (err) => {
-      if (err) next(err);
+    const indexFile = path.join(publicDir, "index.html");
+    fs.readFile(indexFile, "utf8", (err, html) => {
+      if (err) return next(err);
+      res.setHeader("Cache-Control", "no-cache");
+      res.type("html");
+      res.send(applyToIndexHtml(html, resolvePageMeta(req.path, catalogProducts)));
     });
   });
 }

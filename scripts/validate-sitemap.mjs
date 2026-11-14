@@ -68,10 +68,10 @@ for (const loc of locs) {
     fail(`URL does not parse: ${loc}`);
     continue;
   }
-  if (url.hostname !== "www.mizazy.com") fail(`URL is not on www.mizazy.com: ${loc}`);
+  if (url.hostname !== "mizazy.com") fail(`URL is not on mizazy.com: ${loc}`);
   if (url.search || url.hash) fail(`URL has a query or hash: ${loc}`);
   if (url.pathname !== "/" && url.pathname.endsWith("/")) fail(`Non-canonical trailing slash: ${loc}`);
-  if (url.pathname !== "/" && loc !== `https://www.mizazy.com${url.pathname}`) {
+  if (url.pathname !== "/" && loc !== `https://mizazy.com${url.pathname}`) {
     fail(`Non-canonical URL: ${loc}`);
   }
   if (seen.has(loc)) fail(`Duplicate URL: ${loc}`);
@@ -83,17 +83,17 @@ for (const loc of locs) {
 }
 
 for (const slug of productSlugs) {
-  const loc = `https://www.mizazy.com/product/${slug}`;
+  const loc = `https://mizazy.com/product/${slug}`;
   if (!seen.has(loc)) fail(`Missing product URL: ${loc}`);
 }
 
 for (const categoryPath of categoryPaths) {
-  const loc = `https://www.mizazy.com${categoryPath}`;
+  const loc = `https://mizazy.com${categoryPath}`;
   if (!seen.has(loc)) fail(`Missing category URL: ${loc}`);
 }
 
 for (const page of ["/", "/faqs", "/reviews", "/warranty"]) {
-  const loc = page === "/" ? "https://www.mizazy.com/" : `https://www.mizazy.com${page}`;
+  const loc = page === "/" ? "https://mizazy.com/" : `https://mizazy.com${page}`;
   if (!seen.has(loc)) fail(`Missing public page: ${loc}`);
 }
 

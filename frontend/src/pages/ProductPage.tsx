@@ -80,57 +80,6 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const origin = window.location.hostname.endsWith("mizazy.com") ? "https://mizazy.com" : window.location.origin;
-    const url = `${origin}/product/${product.slug || product.id}`;
-    const image = /^https?:\/\//.test(product.image) ? product.image : `${origin}${product.image}`;
-    const description = product.metaDescription || product.description;
-    const restores: (() => void)[] = [];
-
-    const setHead = (selector: string, create: () => HTMLElement, attr: string, value: string) => {
-      const existing = document.head.querySelector<HTMLElement>(selector);
-      if (existing) {
-        const prev = existing.getAttribute(attr);
-        restores.push(() => (prev === null ? existing.removeAttribute(attr) : existing.setAttribute(attr, prev)));
-        existing.setAttribute(attr, value);
-      } else {
-        const el = create();
-        el.setAttribute(attr, value);
-        document.head.appendChild(el);
-        restores.push(() => el.remove());
-      }
-    };
-    const setMeta = (key: "name" | "property", name: string, content?: string) => {
-      if (!content) return;
-      setHead(`meta[${key}="${name}"]`, () => {
-        const m = document.createElement("meta");
-        m.setAttribute(key, name);
-        return m;
-      }, "content", content);
-    };
-
-    const prevTitle = document.title;
-    document.title = product.metaTitle || `${product.name} | MIZAZY`;
-    setMeta("name", "description", description);
-    setMeta("name", "keywords", product.seoKeywords?.join(", "));
-    setMeta("property", "og:type", "product");
-    setMeta("property", "og:title", product.ogTitle || document.title);
-    setMeta("property", "og:description", product.ogDescription || description);
-    setMeta("property", "og:image", image);
-    setMeta("property", "og:image:alt", product.imageAlt || product.name);
-    setMeta("property", "og:url", url);
-    setHead('link[rel="canonical"]', () => {
-      const link = document.createElement("link");
-      link.setAttribute("rel", "canonical");
-      return link;
-    }, "href", url);
-
-    return () => {
-      document.title = prevTitle;
-      restores.reverse().forEach((restore) => restore());
-    };
-  }, [product]);
-
   const handleAddToCart = () => {
     onAddToCart({ product, quantity, color: product.colors[selectedColor], colorName: product.colorNames[selectedColor] });
     setAddedToCart(true);
@@ -271,7 +220,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                       border: `2px solid ${selectedImage === i ? "#D4A520" : "rgba(255,255,255,0.08)"}`,
                       opacity: selectedImage === i ? 1 : 0.6,
                     }}>
-                    <img src={img} alt={`View ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
+                    <img src={img} alt={`${product.imageAlt || product.name}, view ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

@@ -18,6 +18,7 @@ import ReviewsPage from "./pages/ReviewsPage";
 import PaymentStatusPage from "./pages/PaymentStatusPage";
 import WarrantyPage from "./pages/WarrantyPage";
 import CategoryPage from "./pages/CategoryPage";
+import SeoHead from "./SeoHead";
 import { categorySlug } from "./categories";
 
 type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs" | "reviews" | "payment-status" | "warranty" | "category";
@@ -228,6 +229,7 @@ export default function App() {
 
   return (
     <div className="min-h-full bg-[#050505] text-white">
+      <SeoHead page={page} product={selectedProduct} categorySlug={categorySlugValue} />
       <Nav
         onNavigate={navigate}
         cartItems={cart}

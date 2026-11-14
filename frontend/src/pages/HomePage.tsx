@@ -938,6 +938,47 @@ export function ReviewsSection() {
 /* ═══════════════════════════════════════════════════════════
    NEWSLETTER
 ═══════════════════════════════════════════════════════════ */
+const SOCIAL_LINKS = [
+  {
+    label: "Facebook",
+    href: "https://www.facebook.com/share/1A9E6JsxTV/",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M14 8h3V4h-3c-2.8 0-5 2.2-5 5v2H6v4h3v9h4v-9h3.2l.8-4H13V9c0-.6.4-1 1-1z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/mizazy2025/",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    label: "Pinterest",
+    href: "https://in.pinterest.com/mizazy2025/",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 2C6.5 2 2 6.5 2 12c0 4.1 2.5 7.6 6 9.2-.1-.8-.2-2 0-2.9.2-.8 1.3-5.4 1.3-5.4s-.3-.7-.3-1.7c0-1.6.9-2.8 2.1-2.8 1 0 1.5.7 1.5 1.6 0 1-.6 2.4-.9 3.7-.3 1.1.5 2 1.6 2 1.9 0 3.2-2.5 3.2-5.4 0-2.2-1.5-3.9-4.2-3.9-3.1 0-5 2.3-5 4.8 0 .9.3 1.8.7 2.4a.3.3 0 0 1 .1.3l-.3 1.1c0 .2-.2.2-.4.1-1.4-.6-2.1-2.2-2.1-4 0-3 2.6-6.6 7.5-6.6 4 0 6.6 2.9 6.6 6 0 4.1-2.3 7.2-5.7 7.2-1.1 0-2.2-.6-2.6-1.3l-.7 2.7c-.3 1-.9 2.1-1.4 2.8A10 10 0 0 0 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z" />
+      </svg>
+    ),
+  },
+  {
+    label: "YouTube",
+    href: "https://www.youtube.com/@Mizazy-v6u",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M23 12.2s0-3.2-.4-4.6c-.2-.9-.9-1.6-1.8-1.8C19.2 5.4 12 5.4 12 5.4s-7.2 0-8.8.4c-.9.2-1.6.9-1.8 1.8C1 9 1 12.2 1 12.2s0 3.2.4 4.6c.2.9.9 1.6 1.8 1.8 1.6.4 8.8.4 8.8.4s7.2 0 8.8-.4c.9-.2 1.6-.9 1.8-1.8.4-1.4.4-4.6.4-4.6zM9.8 15.5V8.9l6.2 3.3-6.2 3.3z" />
+      </svg>
+    ),
+  },
+];
+
 function Newsletter() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -997,8 +1038,16 @@ function Newsletter() {
 
           {/* Social */}
           <div className="flex items-center justify-center gap-6 mt-8 pt-8 border-t border-white/05">
-            {["Instagram", "Twitter / X", "YouTube", "LinkedIn"].map((s) => (
-              <button key={s} className="text-white/25 hover:text-white/60 text-xs font-display font-500 transition-colors">{s}</button>
+            {SOCIAL_LINKS.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/25 hover:text-white/60 text-xs font-display font-500 transition-colors"
+              >
+                {s.label}
+              </a>
             ))}
           </div>
         </div>
@@ -1036,11 +1085,18 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
               Premium technology made simple. Designed for everyday life.
             </p>
             <div className="flex gap-2.5">
-              {["IG", "YT"].map((s) => (
-                <button key={s}
-                  className="w-8 h-8 rounded-lg border border-white/09 flex items-center justify-center text-white/30 hover:text-white hover:border-white/22 transition-all text-[10px] font-display font-700">
-                  {s}
-                </button>
+              {SOCIAL_LINKS.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  title={s.label}
+                  className="w-8 h-8 rounded-lg border border-white/09 flex items-center justify-center text-white/30 hover:text-white hover:border-white/22 transition-all"
+                >
+                  {s.icon}
+                </a>
               ))}
             </div>
           </div>

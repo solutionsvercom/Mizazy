@@ -23,6 +23,18 @@ const publicPaths = [
   "/blog/how-to-choose-wireless-earbuds",
   "/blog/tws-earbuds-vs-bluetooth-neckband",
   "/blog/how-to-choose-fast-mobile-charger",
+  "/blog/what-to-look-for-before-buying-bluetooth-neckband",
+  "/blog/usb-a-to-type-c-cable-uses-benefits-buying-guide",
+  "/blog/fast-charging-cable-vs-normal-data-cable",
+  "/blog/20w-usb-c-charger-features-compatibility-guide",
+  "/blog/how-to-choose-the-right-data-cable-for-smartphone",
+  "/blog/wireless-earbuds-with-microphone-features-to-compare",
+  "/blog/bluetooth-neckband-battery-life-what-affects-playtime",
+  "/blog/usb-2-data-cable-vs-fast-charging-cable",
+  "/blog/usb-c-charger-vs-usb-a-charger-differences",
+  "/blog/what-does-480mbps-mean-in-data-cable",
+  "/blog/how-to-choose-charging-cable-for-android-phones",
+  "/blog/tws-earbuds-buying-guide-microphone-battery-sound",
 ];
 const titles = new Map();
 const descriptions = new Map();
@@ -95,7 +107,7 @@ for (const pagePath of publicPaths) {
         if (!graph.some((node) => node["@type"] === "BreadcrumbList")) fail("/blog is missing breadcrumb schema");
         if (!rendered.includes('property="og:type" content="website"')) fail("/blog og:type should be website");
         const listed = graph.find((node) => node["@type"] === "Blog")?.mainEntity?.itemListElement || [];
-        if (listed.length !== 3) fail(`/blog ItemList has ${listed.length} articles`);
+        if (listed.length !== 15) fail(`/blog ItemList has ${listed.length} articles`);
       } else {
         const posting = graph.find((node) => node["@type"] === "BlogPosting");
         if (!posting) fail(`${pagePath} is missing BlogPosting schema`);

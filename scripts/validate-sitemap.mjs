@@ -92,12 +92,12 @@ for (const categoryPath of categoryPaths) {
   if (!seen.has(loc)) fail(`Missing category URL: ${loc}`);
 }
 
-for (const page of ["/", "/faqs", "/reviews", "/warranty", "/blog", "/blog/how-to-choose-wireless-earbuds", "/blog/tws-earbuds-vs-bluetooth-neckband", "/blog/how-to-choose-fast-mobile-charger"]) {
+for (const page of ["/", "/faqs", "/reviews", "/warranty", "/blog", "/blog/how-to-choose-wireless-earbuds", "/blog/tws-earbuds-vs-bluetooth-neckband", "/blog/how-to-choose-fast-mobile-charger", "/blog/what-to-look-for-before-buying-bluetooth-neckband", "/blog/usb-a-to-type-c-cable-uses-benefits-buying-guide", "/blog/fast-charging-cable-vs-normal-data-cable", "/blog/20w-usb-c-charger-features-compatibility-guide", "/blog/how-to-choose-the-right-data-cable-for-smartphone", "/blog/wireless-earbuds-with-microphone-features-to-compare", "/blog/bluetooth-neckband-battery-life-what-affects-playtime", "/blog/usb-2-data-cable-vs-fast-charging-cable", "/blog/usb-c-charger-vs-usb-a-charger-differences", "/blog/what-does-480mbps-mean-in-data-cable", "/blog/how-to-choose-charging-cable-for-android-phones", "/blog/tws-earbuds-buying-guide-microphone-battery-sound"]) {
   const loc = page === "/" ? "https://mizazy.com/" : `https://mizazy.com${page}`;
   if (!seen.has(loc)) fail(`Missing public page: ${loc}`);
 }
 
-if (locs.length !== 20) fail(`Expected 20 sitemap URLs, found ${locs.length}`);
+if (locs.length !== 32) fail(`Expected 32 sitemap URLs, found ${locs.length}`);
 
 if (failures.length) {
   console.error(failures.join("\n"));

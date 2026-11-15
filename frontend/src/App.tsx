@@ -281,6 +281,7 @@ export default function App() {
           onBuyNow={handleBuyNow}
           onNavigate={navigate}
           onViewProduct={handleViewProduct}
+          onOpenCategory={openCategory}
         />
       )}
 

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Product, CartItem, Review, products as fallbackProducts, categories as fallbackCategories, reviews as fallbackReviews, bundles as fallbackBundles } from "./data";
 import { api, AuthUser, getToken, setToken } from "./api";
 import { optimizeImageField, optimizeProductMedia } from "./media";
+import { withProductSeo } from "./pageMeta.js";
 
 interface Bundle {
   title: string;
@@ -59,7 +60,7 @@ function loadLocalWishlist(): string[] {
   }
 }
 
-const optimizeProducts = (list: Product[]) => list.map(optimizeProductMedia);
+const optimizeProducts = (list: Product[]) => list.map((product) => withProductSeo(optimizeProductMedia(product)));
 const optimizeCategories = (list: Category[]) => list.map((c) => optimizeImageField(c, 800));
 const optimizeBundles = (list: Bundle[]) => list.map((b) => optimizeImageField(b, 800));
 

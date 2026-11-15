@@ -1,6 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { Product, CartItem } from "../data";
+import { productSeo } from "../pageMeta.js";
 import { useStore } from "../store";
+
+const CATEGORY_NAMES: Record<string, string> = {
+  earbuds: "Earbuds",
+  neckband: "Neckband",
+  "android-and-iphone-charger": "Android and iPhone Charger",
+  "data-cable": "Data Cable",
+};
 
 interface ProductPageProps {
   product: Product;
@@ -8,6 +16,7 @@ interface ProductPageProps {
   onBuyNow: (item: CartItem) => void;
   onNavigate: (page: string, product?: Product) => void;
   onViewProduct: (product: Product) => void;
+  onOpenCategory?: (name: string) => void;
 }
 
 function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
@@ -28,17 +37,19 @@ function Accordion({ title, children, defaultOpen = false }: { title: string; ch
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border-b border-white/055">
+      <h2 className="font-display font-600 text-white/85 text-sm">
       <button
         className="w-full flex items-center justify-between py-4.5 text-left group"
         style={{ paddingTop: "1.125rem", paddingBottom: "1.125rem" }}
         onClick={() => setOpen(!open)}
       >
-        <span className="font-display font-600 text-white/85 text-sm group-hover:text-white transition-colors">{title}</span>
+        <span className="group-hover:text-white transition-colors">{title}</span>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
           className={`text-white/35 transition-transform duration-320 flex-shrink-0 ${open ? "rotate-45" : ""}`}>
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
       </button>
+      </h2>
       <div className={`accordion-content ${open ? "max-h-[3000px] opacity-100 pb-5" : "max-h-0 opacity-0"}`}>
         {children}
       </div>
@@ -46,8 +57,26 @@ function Accordion({ title, children, defaultOpen = false }: { title: string; ch
   );
 }
 
-export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate, onViewProduct }: ProductPageProps) {
+export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate, onViewProduct, onOpenCategory }: ProductPageProps) {
   const { products, wishlist, toggleWishlist } = useStore();
+  const seo = productSeo(product.slug);
+  const imageAlt = seo?.imageAlt || product.imageAlt || product.name;
+  const openLink = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    event.preventDefault();
+    if (href.startsWith("/product/")) {
+      const slug = href.slice("/product/".length);
+      const next = products.find((item) => item.slug === slug || item.id === slug);
+      if (next) onViewProduct(next);
+      return;
+    }
+    if (href.startsWith("/category/")) {
+      const slug = href.slice("/category/".length);
+      onOpenCategory?.(CATEGORY_NAMES[slug] || slug);
+      return;
+    }
+    const page = href.replace(/^\//, "");
+    if (page) onNavigate(page);
+  };
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
   const colorGallery = product.colorImages?.[selectedColor];
@@ -115,7 +144,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
         <div className="sticky-buy-bar">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
             <div className="flex items-center gap-4 min-w-0">
-              <img src={product.image} alt={product.name}
+              <img src={product.image} alt={imageAlt}
                 className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-[#111]" />
               <div className="min-w-0">
                 <p className="font-display font-700 text-white text-sm truncate">{product.name}</p>
@@ -153,7 +182,13 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
         <div className="flex items-center gap-2 text-white/25 text-xs font-display">
           <button onClick={() => onNavigate("home")} className="hover:text-white/60 transition-colors">Home</button>
           <span>/</span>
-          <button onClick={() => onNavigate("home")} className="hover:text-white/60 transition-colors">{product.category}</button>
+          <a
+            href={seo?.links.find((link) => link.href.startsWith("/category/"))?.href || "/"}
+            onClick={(event) => openLink(event, seo?.links.find((link) => link.href.startsWith("/category/"))?.href || "/")}
+            className="hover:text-white/60 transition-colors"
+          >
+            {product.category}
+          </a>
           <span>/</span>
           <span className="text-white/50">{product.name}</span>
         </div>
@@ -169,7 +204,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
             <div className="relative rounded-2xl overflow-hidden bg-[#0d0d0d] border border-white/065 aspect-square mb-3 group cursor-zoom-in">
               <img
                 src={galleryImages[selectedImage] ?? galleryImages[0]}
-                alt={`${product.imageAlt || product.name} ${product.colorNames[selectedColor] ?? ""} view ${selectedImage + 1}`}
+                alt={`${imageAlt}, ${product.colorNames[selectedColor] ?? "product"} view ${selectedImage + 1}`}
                 title={product.imageTitle}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
@@ -220,7 +255,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                       border: `2px solid ${selectedImage === i ? "#D4A520" : "rgba(255,255,255,0.08)"}`,
                       opacity: selectedImage === i ? 1 : 0.6,
                     }}>
-                    <img src={img} alt={`${product.imageAlt || product.name}, view ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
+                    <img src={img} alt={`${imageAlt}, view ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -248,7 +283,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
 
             {/* Name */}
             <h1 className="font-display font-800 text-3xl sm:text-4xl text-white leading-tight tracking-tight mb-2">
-              {product.name}
+              {seo?.h1 || product.name}
             </h1>
             <p className="text-white/45 text-base mb-5">{product.title || product.tagline}</p>
 
@@ -276,8 +311,22 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
 
             {/* Description */}
             <p className="text-white/50 text-sm leading-relaxed mb-6 pl-4 border-l-2 border-[#D4A520]/40">
-              {product.description}
+              {seo?.lead || product.description}
             </p>
+            {seo?.links?.length ? (
+              <p className="text-white/50 text-sm leading-relaxed mb-6">
+                Also see{" "}
+                {seo.links.map((link, index) => (
+                  <span key={link.href}>
+                    {index > 0 ? (index === seo.links.length - 1 ? ", and " : ", ") : ""}
+                    <a href={link.href} onClick={(event) => openLink(event, link.href)} className="text-[#D4A520] hover:underline">
+                      {link.label}
+                    </a>
+                  </span>
+                ))}
+                .
+              </p>
+            ) : null}
 
             {/* Price block */}
             <div className="flex items-end gap-3 mb-1.5">
@@ -433,9 +482,9 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                   <ol className="mt-5 space-y-4">
                     {product.keyFeatures.map((kf, i) => (
                       <li key={i} className="text-sm leading-relaxed">
-                        <p className="text-white font-display font-700 mb-1">
+                        <h3 className="text-white font-display font-700 mb-1">
                           {i + 1}. {kf.title}
-                        </p>
+                        </h3>
                         <p className="text-white/55">{kf.text}</p>
                         {kf.points && (
                           <ul className="mt-1.5 pl-4 list-disc text-white/55 space-y-0.5">
@@ -513,7 +562,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                 <div className="space-y-4">
                   {faqs.map((faq, i) => (
                     <div key={i} className="pb-3.5 border-b border-white/04 last:border-0 last:pb-0">
-                      <p className="font-display font-600 text-white/80 text-sm mb-1.5">{faq.q}</p>
+                      <h3 className="font-display font-600 text-white/80 text-sm mb-1.5">{faq.q}</h3>
                       <p className="text-white/42 text-sm leading-relaxed">{faq.a}</p>
                     </div>
                   ))}
@@ -534,9 +583,9 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {related.map((p) => (
-                <div key={p.id} className="product-card group cursor-pointer" onClick={() => onViewProduct(p)}>
+                <a key={p.id} href={`/product/${p.slug || p.id}`} className="product-card block group cursor-pointer" onClick={(event) => openLink(event, `/product/${p.slug || p.id}`)}>
                   <div className="card-image-wrap aspect-square bg-[#0d0d0d]">
-                    <img src={p.image} alt={p.name} className="card-img w-full h-full object-cover" loading="lazy" />
+                    <img src={p.image} alt={p.imageAlt || p.name} className="card-img w-full h-full object-cover" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/60 to-transparent" />
                   </div>
                   <div className="p-4">
@@ -547,7 +596,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                       <span className="text-white/25 text-xs line-through">₹{p.mrp.toLocaleString()}</span>
                     </div>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </div>

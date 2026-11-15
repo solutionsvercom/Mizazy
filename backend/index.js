@@ -162,7 +162,8 @@ if (fs.existsSync(publicDir)) {
       if (err) return next(err);
       res.setHeader("Cache-Control", "no-cache");
       res.type("html");
-      res.send(applyToIndexHtml(html, resolvePageMeta(req.path, catalogProducts)));
+      const meta = resolvePageMeta(req.path, catalogProducts);
+      res.status(meta.statusCode || 200).send(applyToIndexHtml(html, meta));
     });
   });
 }

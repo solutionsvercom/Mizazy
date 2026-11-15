@@ -1103,7 +1103,7 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
 
           {[
             { title: "Shop", links: ["All Products", "New Arrivals", "Best Sellers", "Offers", "Bundles"] },
-            { title: "Help", links: ["Contact Us", "Shipping Info", "Returns", "Warranty", "FAQs"] },
+            { title: "Help", links: ["Contact Us", "Shipping Info", "Returns", "Warranty", "FAQs", "Blog"] },
             { title: "Account", links: accountLinks },
             { title: "Legal", links: ["Privacy Policy", "Terms of Use", "Refund Policy", "Shipping Policy"] },
           ].map((col) => (
@@ -1121,6 +1121,7 @@ function Footer({ onNavigate }: { onNavigate: (p: string) => void }) {
                         if (FOOTER_TOPICS[l]) setInfoTopic(FOOTER_TOPICS[l]);
                         else if (l === "Warranty") onNavigate("warranty");
                         else if (l === "FAQs") onNavigate("faqs");
+                        else if (l === "Blog") onNavigate("blog");
                         else if (l === "Track Order") onNavigate("track");
                         else if (l === "Reviews") onNavigate("reviews");
                         else if (l === "My Account" || l === "My Orders" || l === "Wishlist") onNavigate("account");

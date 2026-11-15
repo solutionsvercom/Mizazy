@@ -18,10 +18,12 @@ import ReviewsPage from "./pages/ReviewsPage";
 import PaymentStatusPage from "./pages/PaymentStatusPage";
 import WarrantyPage from "./pages/WarrantyPage";
 import CategoryPage from "./pages/CategoryPage";
+import BlogPage from "./pages/BlogPage";
+import BlogArticlePage from "./pages/BlogArticlePage";
 import SeoHead from "./SeoHead";
 import { categorySlug } from "./categories";
 
-type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs" | "reviews" | "payment-status" | "warranty" | "category";
+type Page = "home" | "product" | "checkout" | "track" | "confirmation" | "account" | "reset-password" | "faqs" | "reviews" | "payment-status" | "warranty" | "category" | "blog";
 
 interface Toast {
   id: number;
@@ -54,20 +56,31 @@ function categorySlugFromPath(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-function routeFromLocation(products: Product[], hasOrder: boolean): { page: Page; product: Product | null; categorySlug: string | null } {
-  const product = productFromPath(products);
-  if (product) return { page: "product", product, categorySlug: null };
-  const category = categorySlugFromPath();
-  if (category) return { page: "category", product: null, categorySlug: category };
+function blogSlugFromPath(): string | null {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  const page = SIMPLE_PAGES[path];
-  if (!page || (page === "confirmation" && !hasOrder)) return { page: "home", product: null, categorySlug: null };
-  return { page, product: null, categorySlug: null };
+  if (path === "/blog") return "";
+  if (!path.startsWith("/blog/")) return null;
+  const match = path.match(/^\/blog\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]) : decodeURIComponent(path.slice("/blog/".length));
 }
 
-function pathFor(page: Page, product: Product | null, category: string | null): string {
+function routeFromLocation(products: Product[], hasOrder: boolean): { page: Page; product: Product | null; categorySlug: string | null; blogSlug: string | null } {
+  const product = productFromPath(products);
+  if (product) return { page: "product", product, categorySlug: null, blogSlug: null };
+  const category = categorySlugFromPath();
+  if (category) return { page: "category", product: null, categorySlug: category, blogSlug: null };
+  const blogSlug = blogSlugFromPath();
+  if (blogSlug !== null) return { page: "blog", product: null, categorySlug: null, blogSlug: blogSlug || null };
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const page = SIMPLE_PAGES[path];
+  if (!page || (page === "confirmation" && !hasOrder)) return { page: "home", product: null, categorySlug: null, blogSlug: null };
+  return { page, product: null, categorySlug: null, blogSlug: null };
+}
+
+function pathFor(page: Page, product: Product | null, category: string | null, blogSlug: string | null): string {
   if (page === "product" && product) return `/product/${product.slug || product.id}`;
   if (page === "category" && category) return `/category/${category}`;
+  if (page === "blog") return blogSlug ? `/blog/${blogSlug}` : "/blog";
   if (page === "home" || page === "product" || page === "category") return "/";
   return `/${page}`;
 }
@@ -78,6 +91,7 @@ export default function App() {
   const [page, setPage] = useState<Page>(initialRoute.page);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialRoute.product);
   const [categorySlugValue, setCategorySlugValue] = useState<string | null>(initialRoute.categorySlug);
+  const [blogSlug, setBlogSlug] = useState<string | null>(initialRoute.blogSlug);
   const replaceNextEntry = useRef(true);
   const productsRef = useRef(products);
   productsRef.current = products;
@@ -93,13 +107,13 @@ export default function App() {
   }, [initialRoute]);
 
   useEffect(() => {
-    const path = pathFor(page, selectedProduct, categorySlugValue);
+    const path = pathFor(page, selectedProduct, categorySlugValue, blogSlug);
     const replace = replaceNextEntry.current;
     replaceNextEntry.current = false;
     if (window.location.pathname === path) return;
     if (replace) window.history.replaceState({ mizazy: true }, "", path);
     else window.history.pushState({ mizazy: true }, "", path);
-  }, [page, selectedProduct, categorySlugValue]);
+  }, [page, selectedProduct, categorySlugValue, blogSlug]);
   const [cartOpen, setCartOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -113,11 +127,12 @@ export default function App() {
   useEffect(() => {
     const onPopState = () => {
       const next = routeFromLocation(productsRef.current, hasOrderRef.current);
-      if (pathFor(next.page, next.product, next.categorySlug) !== window.location.pathname) {
+      if (pathFor(next.page, next.product, next.categorySlug, next.blogSlug) !== window.location.pathname) {
         replaceNextEntry.current = true;
       }
       if (next.product) setSelectedProduct(next.product);
       setCategorySlugValue(next.categorySlug);
+      setBlogSlug(next.blogSlug);
       setPage(next.page);
       setCartOpen(false);
       setSearchOpen(false);
@@ -136,7 +151,15 @@ export default function App() {
   const navigate = useCallback((to: string, product?: Product) => {
     if (product) setSelectedProduct(product);
     if (to === "warranty") setWarrantyProductId(product?.id ?? null);
+    setBlogSlug(null);
     setPage(to as Page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setCartOpen(false);
+  }, []);
+
+  const openBlog = useCallback((slug: string | null) => {
+    setBlogSlug(slug);
+    setPage("blog");
     window.scrollTo({ top: 0, behavior: "smooth" });
     setCartOpen(false);
   }, []);
@@ -229,7 +252,7 @@ export default function App() {
 
   return (
     <div className="min-h-full bg-[#050505] text-white">
-      <SeoHead page={page} product={selectedProduct} categorySlug={categorySlugValue} />
+      <SeoHead page={page} product={selectedProduct} categorySlug={categorySlugValue} blogSlug={blogSlug} />
       <Nav
         onNavigate={navigate}
         cartItems={cart}
@@ -282,6 +305,7 @@ export default function App() {
           onNavigate={navigate}
           onViewProduct={handleViewProduct}
           onOpenCategory={openCategory}
+          onOpenBlog={openBlog}
         />
       )}
 
@@ -315,6 +339,19 @@ export default function App() {
           onNavigate={navigate}
           onViewProduct={handleViewProduct}
           onAddToCart={handleAddToCart}
+          onOpenBlog={openBlog}
+        />
+      )}
+
+      {page === "blog" && !blogSlug && <BlogPage onNavigate={navigate} onOpenBlog={openBlog} />}
+
+      {page === "blog" && blogSlug && (
+        <BlogArticlePage
+          slug={blogSlug}
+          onNavigate={navigate}
+          onOpenBlog={openBlog}
+          onViewProduct={handleViewProduct}
+          onOpenCategory={openCategory}
         />
       )}
 

@@ -1,3 +1,5 @@
+import { ARTICLES, BLOG_LISTING, matchBlogPath, renderBlogBody } from "./blogPosts.js";
+
 export const SITE = "https://mizazy.com";
 
 const LOGO = "https://res.cloudinary.com/aiwtovua/image/upload/v1789379952/Mizazy_Logo.png";
@@ -427,6 +429,94 @@ export function resolvePageMeta(pathname, products = []) {
     };
   }
 
+  const blog = matchBlogPath(path);
+  if (blog) {
+    const bodyHtml = renderBlogBody(path);
+    if (blog.kind === "missing") {
+      return {
+        title: "Article not found | MIZAZY",
+        description: "This Mizazy guide is not available.",
+        canonical: canonical(path),
+        robots: "noindex, follow",
+        image: LOGO,
+        statusCode: 404,
+        bodyHtml,
+        jsonLd: null,
+      };
+    }
+    if (blog.kind === "listing") {
+      const url = canonical("/blog");
+      return {
+        title: BLOG_LISTING.seoTitle,
+        description: BLOG_LISTING.metaDescription,
+        canonical: url,
+        robots: "index, follow",
+        image: ARTICLES[0].featuredImage,
+        imageAlt: ARTICLES[0].featuredImageAlt,
+        ogType: "website",
+        statusCode: 200,
+        bodyHtml,
+        jsonLd: graph([
+          {
+            "@type": "Blog",
+            name: BLOG_LISTING.h1,
+            description: BLOG_LISTING.introduction,
+            url,
+            mainEntity: {
+              "@type": "ItemList",
+              numberOfItems: ARTICLES.length,
+              itemListElement: ARTICLES.map((article, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                name: article.title,
+                url: canonical(`/blog/${article.slug}`),
+              })),
+            },
+          },
+          breadcrumb([{ name: "Home", url: `${SITE}/` }, { name: "Blog", url }]),
+        ]),
+      };
+    }
+    const article = blog.article;
+    const url = canonical(`/blog/${article.slug}`);
+    const posting = {
+      "@type": "BlogPosting",
+      headline: article.h1,
+      description: article.metaDescription,
+      image: [article.featuredImage],
+      author: { "@type": "Organization", name: "MIZAZY", url: `${SITE}/` },
+      publisher: {
+        "@type": "Organization",
+        name: "MIZAZY",
+        url: `${SITE}/`,
+        logo: { "@type": "ImageObject", url: LOGO },
+      },
+      datePublished: article.datePublished,
+      mainEntityOfPage: url,
+    };
+    if (article.dateModified) posting.dateModified = article.dateModified;
+    return {
+      title: article.seoTitle,
+      description: article.metaDescription,
+      canonical: url,
+      robots: "index, follow",
+      image: article.featuredImage,
+      imageAlt: article.featuredImageAlt,
+      ogType: "article",
+      keywords: [article.primaryKeyword, ...article.secondaryKeywords],
+      statusCode: 200,
+      bodyHtml,
+      jsonLd: graph([
+        posting,
+        breadcrumb([
+          { name: "Home", url: `${SITE}/` },
+          { name: "Blog", url: canonical("/blog") },
+          { name: article.h1, url },
+        ]),
+      ]),
+    };
+  }
+
   if (PRIVATE.has(path) || path.startsWith("/admin/") || path.startsWith("/api/")) {
     const name = path.split("/").filter(Boolean)[0] || "Page";
     return {
@@ -477,11 +567,17 @@ export function resolvePageMeta(pathname, products = []) {
   };
 }
 
+function socialType(meta) {
+  if (meta.ogType) return meta.ogType;
+  if (meta.jsonLd && JSON.stringify(meta.jsonLd).includes('"@type":"Product"')) return "product";
+  return "website";
+}
+
 function headBlock(meta) {
   const lines = [
     `<link data-seo="canonical" rel="canonical" href="${esc(meta.canonical)}" />`,
     `<meta data-seo="robots" name="robots" content="${esc(meta.robots)}" />`,
-    `<meta data-seo="og:type" property="og:type" content="${meta.jsonLd && JSON.stringify(meta.jsonLd).includes('"@type":"Product"') ? "product" : "website"}" />`,
+    `<meta data-seo="og:type" property="og:type" content="${socialType(meta)}" />`,
     `<meta data-seo="og:site_name" property="og:site_name" content="MIZAZY" />`,
     `<meta data-seo="og:title" property="og:title" content="${esc(meta.title)}" />`,
     `<meta data-seo="og:description" property="og:description" content="${esc(meta.description)}" />`,
@@ -507,7 +603,11 @@ export function applyToIndexHtml(html, meta) {
     out = out.replace(/<meta\s+[^>]*name="description"[^>]*>/, `<meta data-seo="description" name="description" content="${esc(meta.description)}" />`);
   }
   out = out.replace(/\s*<!--mizazy-seo-->[\s\S]*?<!--\/mizazy-seo-->/, "");
-  return out.replace("</head>", `    ${headBlock(meta)}\n  </head>`);
+  out = out.replace("</head>", `    ${headBlock(meta)}\n  </head>`);
+  if (meta.bodyHtml) {
+    out = out.replace(/<div id="root">\s*<\/div>/, `<div id="root">${meta.bodyHtml}</div>`);
+  }
+  return out;
 }
 
 export function applyToDocument(meta) {
@@ -540,7 +640,7 @@ export function applyToDocument(meta) {
 
   const metas = [
     ["robots", "name", "robots", meta.robots],
-    ["og:type", "property", "og:type", meta.jsonLd && JSON.stringify(meta.jsonLd).includes('"@type":"Product"') ? "product" : "website"],
+    ["og:type", "property", "og:type", socialType(meta)],
     ["og:site_name", "property", "og:site_name", "MIZAZY"],
     ["og:title", "property", "og:title", meta.title],
     ["og:description", "property", "og:description", meta.description],

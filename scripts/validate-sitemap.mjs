@@ -92,10 +92,12 @@ for (const categoryPath of categoryPaths) {
   if (!seen.has(loc)) fail(`Missing category URL: ${loc}`);
 }
 
-for (const page of ["/", "/faqs", "/reviews", "/warranty"]) {
+for (const page of ["/", "/faqs", "/reviews", "/warranty", "/blog", "/blog/how-to-choose-wireless-earbuds", "/blog/tws-earbuds-vs-bluetooth-neckband", "/blog/how-to-choose-fast-mobile-charger"]) {
   const loc = page === "/" ? "https://mizazy.com/" : `https://mizazy.com${page}`;
   if (!seen.has(loc)) fail(`Missing public page: ${loc}`);
 }
+
+if (locs.length !== 20) fail(`Expected 20 sitemap URLs, found ${locs.length}`);
 
 if (failures.length) {
   console.error(failures.join("\n"));

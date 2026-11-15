@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { Product, CartItem } from "../data";
 import { productSeo } from "../pageMeta.js";
+import { guideForProduct } from "../blogPosts.js";
 import { useStore } from "../store";
 
 const CATEGORY_NAMES: Record<string, string> = {
@@ -17,6 +18,7 @@ interface ProductPageProps {
   onNavigate: (page: string, product?: Product) => void;
   onViewProduct: (product: Product) => void;
   onOpenCategory?: (name: string) => void;
+  onOpenBlog?: (slug: string | null) => void;
 }
 
 function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
@@ -57,9 +59,10 @@ function Accordion({ title, children, defaultOpen = false }: { title: string; ch
   );
 }
 
-export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate, onViewProduct, onOpenCategory }: ProductPageProps) {
+export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate, onViewProduct, onOpenCategory, onOpenBlog }: ProductPageProps) {
   const { products, wishlist, toggleWishlist } = useStore();
   const seo = productSeo(product.slug);
+  const guide = guideForProduct(product.slug);
   const imageAlt = seo?.imageAlt || product.imageAlt || product.name;
   const openLink = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     event.preventDefault();
@@ -72,6 +75,14 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
     if (href.startsWith("/category/")) {
       const slug = href.slice("/category/".length);
       onOpenCategory?.(CATEGORY_NAMES[slug] || slug);
+      return;
+    }
+    if (href === "/blog") {
+      onOpenBlog?.(null);
+      return;
+    }
+    if (href.startsWith("/blog/")) {
+      onOpenBlog?.(href.slice("/blog/".length));
       return;
     }
     const page = href.replace(/^\//, "");
@@ -327,6 +338,17 @@ export default function ProductPage({ product, onAddToCart, onBuyNow, onNavigate
                 .
               </p>
             ) : null}
+            {guide && (
+              <p className="text-white/50 text-sm leading-relaxed mb-6">
+                <a
+                  href={`/blog/${guide.slug}`}
+                  onClick={(event) => openLink(event, `/blog/${guide.slug}`)}
+                  className="text-[#D4A520] hover:underline"
+                >
+                  Read the guide: {guide.title}
+                </a>
+              </p>
+            )}
 
             {/* Price block */}
             <div className="flex items-end gap-3 mb-1.5">

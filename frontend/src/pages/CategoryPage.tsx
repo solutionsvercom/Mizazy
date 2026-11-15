@@ -3,20 +3,23 @@ import { categorySlug, productMatchesCategory } from "../categories";
 import { useStore } from "../store";
 import ProductCard from "../components/ProductCard";
 import { categorySeo } from "../pageMeta.js";
+import { guideForCategory } from "../blogPosts.js";
 
 interface CategoryPageProps {
   slug: string;
   onNavigate: (page: string) => void;
   onViewProduct: (product: Product) => void;
   onAddToCart: (item: CartItem) => void;
+  onOpenBlog: (slug: string | null) => void;
 }
 
-export default function CategoryPage({ slug, onNavigate, onViewProduct, onAddToCart }: CategoryPageProps) {
+export default function CategoryPage({ slug, onNavigate, onViewProduct, onAddToCart, onOpenBlog }: CategoryPageProps) {
   const { categories, products } = useStore();
   const category = categories.find((c) => categorySlug(c.name) === slug);
   const title = category?.name || slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const matches = products.filter((p) => productMatchesCategory(p, title));
   const seo = categorySeo(slug);
+  const guide = guideForCategory(slug);
   const heading = seo?.h1 || title;
   const openProduct = (href: string) => {
     const product = products.find((item) => `/product/${item.slug || item.id}` === href);
@@ -50,6 +53,18 @@ export default function CategoryPage({ slug, onNavigate, onViewProduct, onAddToC
             ) : (
               <span key={index}>{part.text}</span>
             ))}
+          </p>
+        )}
+        {guide && (
+          <p className="text-white/55 text-sm mb-6 max-w-3xl">
+            From the blog:{" "}
+            <a
+              href={`/blog/${guide.slug}`}
+              onClick={(event) => { event.preventDefault(); onOpenBlog(guide.slug); }}
+              className="text-[#D4A520] hover:underline"
+            >
+              {guide.title}
+            </a>
           </p>
         )}
         <p className="text-white/40 mb-10">

@@ -19,6 +19,10 @@ const publicPaths = [
   "/faqs",
   "/reviews",
   "/warranty",
+  "/blog",
+  "/blog/how-to-choose-wireless-earbuds",
+  "/blog/tws-earbuds-vs-bluetooth-neckband",
+  "/blog/how-to-choose-fast-mobile-charger",
 ];
 const titles = new Map();
 const descriptions = new Map();
@@ -75,11 +79,57 @@ for (const pagePath of publicPaths) {
       if (!crumbs) fail(`${pagePath} is missing breadcrumb schema`);
     }
     if (pagePath === "/" && !graph.some((node) => node["@type"] === "Organization")) fail("Homepage is missing Organization schema");
+    if (pagePath.startsWith("/blog")) {
+      if (meta.statusCode !== 200) fail(`${pagePath} should return HTTP 200`);
+      if (!meta.bodyHtml) fail(`${pagePath} is missing first-response HTML`);
+      if (!rendered.includes(`<div id="root">${meta.bodyHtml}</div>`)) fail(`${pagePath} article HTML is not inside #root`);
+      const h1s = meta.bodyHtml.match(/<h1>/g) || [];
+      if (h1s.length !== 1) fail(`${pagePath} initial HTML has ${h1s.length} h1 elements`);
+      if (meta.bodyHtml.includes("display:none") || meta.bodyHtml.includes("hidden")) {
+        fail(`${pagePath} hides injected content`);
+      }
+      const rootClose = rendered.indexOf(meta.bodyHtml) + meta.bodyHtml.length;
+      if (!rendered.slice(rootClose, rootClose + 20).includes("</div>")) fail(`${pagePath} root was not closed after the article`);
+      if (pagePath === "/blog") {
+        if (!graph.some((node) => node["@type"] === "Blog")) fail("/blog is missing Blog schema");
+        if (!graph.some((node) => node["@type"] === "BreadcrumbList")) fail("/blog is missing breadcrumb schema");
+        if (!rendered.includes('property="og:type" content="website"')) fail("/blog og:type should be website");
+        const listed = graph.find((node) => node["@type"] === "Blog")?.mainEntity?.itemListElement || [];
+        if (listed.length !== 3) fail(`/blog ItemList has ${listed.length} articles`);
+      } else {
+        const posting = graph.find((node) => node["@type"] === "BlogPosting");
+        if (!posting) fail(`${pagePath} is missing BlogPosting schema`);
+        if (!posting?.headline || !posting?.datePublished || !posting?.author || !posting?.publisher) {
+          fail(`${pagePath} BlogPosting is incomplete`);
+        }
+        if (posting?.author?.["@type"] !== "Organization" || posting?.author?.name !== "MIZAZY") {
+          fail(`${pagePath} author is not Organization MIZAZY`);
+        }
+        if (posting?.dateModified) fail(`${pagePath} sets dateModified without an update`);
+        if (!rendered.includes('property="og:type" content="article"')) fail(`${pagePath} og:type should be article`);
+        for (const href of ["/product/", "/category/"]) {
+          if (!meta.bodyHtml.includes(href)) fail(`${pagePath} initial HTML is missing a ${href} link`);
+        }
+      }
+      if (graph.some((node) => node["@type"] === "Product")) fail(`${pagePath} must not use Product schema`);
+      if (!/^https:\/\/res\.cloudinary\.com\//.test(meta.image)) fail(`${pagePath} image is not an https Cloudinary URL`);
+    } else if (meta.bodyHtml) {
+      fail(`${pagePath} should not inject blog HTML`);
+    }
   }
 }
 
 const checkout = resolvePageMeta("/checkout", products);
 if (!checkout.robots.includes("noindex")) fail("Checkout is indexable");
+
+const missing = resolvePageMeta("/blog/not-a-real-mizazy-guide", products);
+if (missing.statusCode !== 404) fail("Unknown blog slug should be HTTP 404");
+if (!missing.robots.includes("noindex")) fail("Unknown blog slug is indexable");
+if (!missing.bodyHtml || missing.bodyHtml.includes("Mizazy Blog")) fail("Unknown blog slug rendered the blog listing");
+const missingHtml = applyToIndexHtml(html, missing);
+if (missingHtml.includes("How to Choose Wireless Earbuds: A Complete Buying Guide")) {
+  fail("Unknown blog slug rendered a real article");
+}
 
 if (failures.length) {
   console.error(failures.join("\n"));

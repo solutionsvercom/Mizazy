@@ -48,6 +48,23 @@ for (const pagePath of publicPaths) {
     const data = JSON.parse(jsonMatch[1]);
     const graph = data["@graph"] || [];
     if (JSON.stringify(data).includes("aggregateRating")) fail(`${pagePath} invents an aggregate rating`);
+    if (pagePath.startsWith("/category/")) {
+      const collection = graph.find((node) => node["@type"] === "CollectionPage");
+      const breadcrumb = graph.find((node) => node["@type"] === "BreadcrumbList");
+      if (!collection) fail(`${pagePath} category schema missing CollectionPage`);
+      if (!breadcrumb) fail(`${pagePath} category schema missing BreadcrumbList`);
+      if (graph.some((node) => node["@type"] === "Product")) {
+        fail(`${pagePath} category schema must not use Product`);
+      }
+      const listed = collection?.mainEntity?.itemListElement || [];
+      if (!listed.length) fail(`${pagePath} category ItemList is empty`);
+      for (const item of listed) {
+        if (item.offers || item.aggregateRating || item.review) {
+          fail(`${pagePath} category list invents product offers or reviews`);
+        }
+      }
+    }
+
     if (pagePath.startsWith("/product/")) {
       const product = graph.find((node) => node["@type"] === "Product");
       const crumbs = graph.find((node) => node["@type"] === "BreadcrumbList");

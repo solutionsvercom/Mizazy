@@ -7,6 +7,7 @@ interface ProductCardProps {
   product: Product;
   onViewProduct: (product: Product) => void;
   onAddToCart: (item: CartItem) => void;
+  productHref?: string;
 }
 
 export function BadgeEl({ badge }: { badge: Product["badge"] }) {
@@ -32,7 +33,7 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-export default function ProductCard({ product, onViewProduct, onAddToCart }: ProductCardProps) {
+export default function ProductCard({ product, onViewProduct, onAddToCart, productHref }: ProductCardProps) {
   const { wishlist, toggleWishlist } = useStore();
   const wishlisted = wishlist.includes(product.id);
   const [hovered, setHovered] = useState(false);
@@ -139,7 +140,19 @@ export default function ProductCard({ product, onViewProduct, onAddToCart }: Pro
 
         {/* Name */}
         <h3 className="font-display font-700 text-white text-[0.95rem] leading-tight mb-1">
-          {product.name}
+          {productHref ? (
+            <a
+              href={productHref}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onViewProduct(product);
+              }}
+              className="hover:text-[#D4A520] transition-colors"
+            >
+              {product.name}
+            </a>
+          ) : product.name}
         </h3>
 
         {/* Tagline */}

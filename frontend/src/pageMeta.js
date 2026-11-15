@@ -145,29 +145,105 @@ export function withProductSeo(product) {
 const CATEGORIES = {
   earbuds: {
     name: "Earbuds",
-    title: "MIZAZY Earbuds | Wireless TWS Earphones",
+    title: "Wireless Earbuds | TWS Bluetooth Earbuds at MIZAZY",
     description:
-      "Shop MIZAZY true wireless earbuds, including Wireless Buds 104 and Buds X Prime, with Bluetooth playback and a charging case.",
+      "Shop MIZAZY wireless earbuds for music and calls. Compare TWS earbuds Buds 104 and Buds X Prime, with Bluetooth playback, a microphone and a charging case.",
+    h1: "Mizazy Wireless Earbuds",
+    intro: [
+      { text: "Mizazy wireless earbuds are true wireless earbuds for music and calls. " },
+      { text: "Mizazy Buds 104", href: "/product/mizazy-wireless-buds-104" },
+      { text: " has 35 hours of backup, Bluetooth 5.0, a quad microphone and environmental noise cancellation. " },
+      { text: "Mizazy Buds X Prime", href: "/product/mizazy-buds-x-prime-tws-earbuds" },
+      { text: " is a Bluetooth earbud with up to 40 hours of backup, HD sound and a built-in microphone. Both come with a charging case." },
+    ],
+    faqs: [
+      {
+        question: "What is the difference between Buds 104 and Buds X Prime?",
+        answer: "Buds 104 lists 35 hours of backup, a quad microphone and environmental noise cancellation. Buds X Prime lists Bluetooth 5.0, 40 hours of backup, HD sound and a built-in microphone. Both are wireless earbuds with a charging case.",
+      },
+      {
+        question: "Can these wireless earbuds be used for calls?",
+        answer: "Yes. Buds 104 has a quad microphone with environmental noise cancellation, and Buds X Prime has a built-in microphone.",
+      },
+    ],
   },
   neckband: {
     name: "Neckband",
-    title: "MIZAZY Neckband | Bluetooth Earphones",
+    title: "Bluetooth Neckband with Long Battery Life | MIZAZY",
     description:
-      "Shop the MIZAZY Equalizer Bluetooth Neckband with magnetic earbuds, Type-C charging and HD stereo sound.",
+      "Shop the MIZAZY Bluetooth neckband. The Equalizer wireless neckband has up to 100 hours of playtime, 13mm drivers and Bluetooth 5.2 neckband earphones.",
+    h1: "Mizazy Bluetooth Neckband",
+    intro: [
+      { text: "The Mizazy Bluetooth neckband is a wireless neckband for everyday music and calls. " },
+      { text: "Mizazy Equalizer", href: "/product/mizazy-equalizer-bluetooth-neckband" },
+      { text: " uses Bluetooth 5.2 and 13mm drivers, with magnetic earbuds and up to 100 hours of playtime listed on the packaging." },
+    ],
+    faqs: [
+      {
+        question: "How long does the neckband battery last?",
+        answer: "The Equalizer packaging lists up to 100 hours of playtime. Actual playback depends on volume and how you use the neckband earphones.",
+      },
+    ],
   },
   "android-and-iphone-charger": {
     name: "Android and iPhone Charger",
-    title: "MIZAZY Chargers | USB-C Power Adapters",
+    title: "Fast Mobile Charger | USB-C Charger, USB-A | MIZAZY",
     description:
-      "Shop MIZAZY USB-C chargers, including the 20W adapter for iPhone and the 135W charger with USB-C and USB-A ports.",
+      "Shop a MIZAZY fast mobile charger. Choose the 20W USB-C charger for iPhone or the 135W mobile charger with USB-C and USB-A ports and an intelligent chip.",
+    h1: "Mizazy Fast Mobile Chargers",
+    intro: [
+      { text: "A Mizazy fast mobile charger is for everyday phone charging or higher-power charging. The " },
+      { text: "20W USB-C fast charger", href: "/product/mizazy-20w-usb-c-fast-charger-for-iphone" },
+      { text: " is a compact USB-C charger made for iPhone. The " },
+      { text: "135W USB fast charger", href: "/product/mizazy-135w-super-fast-charger" },
+      { text: " adds USB-C and USB-A ports and an intelligent charging chip. The 135W box includes a cable; the 20W adapter does not." },
+    ],
+    faqs: [
+      {
+        question: "Which charger has USB-C and USB-A?",
+        answer: "The 135W charger has one USB-C port and one USB-A port. The 20W mobile charger has a single USB-C port.",
+      },
+      {
+        question: "Does the charger include a cable?",
+        answer: "The 135W charger includes a 1m charging cable. The 20W USB-C adapter does not include a cable.",
+      },
+    ],
   },
   "data-cable": {
     name: "Data Cable",
-    title: "MIZAZY Data Cables | USB-A to Type-C",
+    title: "Fast Charging Cable | Type-C USB Data Cable | MIZAZY",
     description:
-      "Shop MIZAZY USB-A to Type-C data cables, including the 65W, 120W and 140W charging cables.",
+      "Shop a MIZAZY fast charging cable. Compare USB-A to Type-C data cables, including the 65W, 120W USB data cable and nylon braided 140W Type-C cable.",
+    h1: "Mizazy Fast Charging Cables",
+    intro: [
+      { text: "Each Mizazy fast charging cable is a USB-A to Type-C cable for charging and data transfer. The range includes the " },
+      { text: "65W fast charging data cable", href: "/product/mizazy-65w-fast-usb-data-cable" },
+      { text: ", the " },
+      { text: "120W USB data cable", href: "/product/mizazy-120w-fast-usb-data-cable" },
+      { text: " with high-speed data sync, and the nylon braided " },
+      { text: "140W Type-C cable", href: "/product/mizazy-140w-fast-charging-data-cable" },
+      { text: " with 480Mbps data transfer." },
+    ],
+    faqs: [
+      {
+        question: "Which fast charging cable is braided?",
+        answer: "The 140W cable has a nylon braided cover. The 65W and 120W cables are also USB-A to Type-C fast charging cables.",
+      },
+      {
+        question: "Can these cables transfer data?",
+        answer: "Yes. The 65W cable lists USB 2.0 data transfer, the 120W cable lists high-speed data sync, and the 140W cable lists 480Mbps data transfer.",
+      },
+    ],
   },
 };
+
+export function categorySeo(slug) {
+  return CATEGORIES[slug] || null;
+}
+
+function categoryPlainText(category) {
+  return (category.intro || []).map((part) => part.text).join("");
+}
 
 const PAGES = {
   "/": {
@@ -320,15 +396,34 @@ export function resolvePageMeta(pathname, products = []) {
       };
     }
     const url = canonical(`/category/${categoryMatch[1]}`);
-    const sample = list.find((item) => shopCategory(item)?.name === category.name);
+    const items = list.filter((item) => shopCategory(item)?.name === category.name);
+    const sample = items.find((item) => /^https?:\/\//.test(item.image));
     return {
       title: category.title,
       description: category.description,
       canonical: url,
       robots: "index, follow",
-      image: sample && /^https?:\/\//.test(sample.image) ? sample.image : LOGO,
-      imageAlt: category.name,
-      jsonLd: graph([breadcrumb([{ name: "Home", url: `${SITE}/` }, { name: category.name, url }])]),
+      image: sample ? sample.image : LOGO,
+      imageAlt: category.h1 || category.name,
+      jsonLd: graph([
+        {
+          "@type": "CollectionPage",
+          name: category.h1 || category.name,
+          description: categoryPlainText(category),
+          url,
+          mainEntity: {
+            "@type": "ItemList",
+            numberOfItems: items.length,
+            itemListElement: items.map((item, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              name: item.name,
+              url: canonical(`/product/${item.slug || item.id}`),
+            })),
+          },
+        },
+        breadcrumb([{ name: "Home", url: `${SITE}/` }, { name: category.h1 || category.name, url }]),
+      ]),
     };
   }
 
